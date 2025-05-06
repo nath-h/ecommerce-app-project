@@ -1,5 +1,6 @@
-<!-- TODO: Fix home display with inventory.slice where 4 items breaks the grid
-  layout. -->
+<!-- TODO: Fix home display with inventory.slice where 4 items breaks the grid layout.
+  Works fine in Products page so see what's wrong here by seeing what is right there.
+  Also need to disallow negative quantities. -->
 
 <template>
   <div class="home">
@@ -43,36 +44,3 @@ export default {
   },
 };
 </script>
-
-<style>
-.recommended-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 0 15px;
-}
-
-.product-item {
-  flex: 0 0 calc(33.333% - 20px);
-  min-width: 250px;
-  max-width: 350px;
-  margin-bottom: 20px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .product-item {
-    flex: 0 0 calc(50% - 20px);
-  }
-}
-
-@media (max-width: 640px) {
-  .product-item {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-}
-</style>
