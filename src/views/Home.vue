@@ -1,3 +1,6 @@
+<!-- TODO: Fix home display with inventory.slice where 4 items breaks the grid
+  layout. -->
+
 <template>
   <div class="home">
     <div class="splash-container">
@@ -10,124 +13,66 @@
       <h2>Recommended</h2>
 
       <div class="recommended">
-        <div class="card">
-          <div class="card-title">Carrots</div>
-          <div class="card-body">
-            <i class="icofont-10x icofont-carrot"></i>
-            <form>
-              <div class="row">
-                <div class="cell">
-                  <label>Type:</label>
-                </div>
-                <div class="cell">
-                  <em>Vegetable</em>
-                </div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Price:</label>
-                </div>
-                <div class="cell">$4.82</div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Quantity:</label>
-                </div>
-                <div class="cell">
-                  <input type="number" v-model.number="inventory.carrots" />
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="card-footer">
-            <button @click="addToCart('carrots')" class="btn btn-light">
-              Add to cart
-            </button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Pineapples</div>
-          <div class="card-body">
-            <i class="icofont-10x icofont-pineapple"></i>
-            <form>
-              <div class="row">
-                <div class="cell">
-                  <label>Type:</label>
-                </div>
-                <div class="cell">
-                  <em>Fruit</em>
-                </div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Price:</label>
-                </div>
-                <div class="cell">$1.62</div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Quantity:</label>
-                </div>
-                <div class="cell">
-                  <input type="number" v-model="inventory.pineapples" />
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="card-footer">
-            <button class="btn btn-light">Add to cart</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Cherries</div>
-          <div class="card-body">
-            <i class="icofont-10x icofont-cherry"></i>
-            <form>
-              <div class="row">
-                <div class="cell">
-                  <label>Type:</label>
-                </div>
-                <div class="cell">
-                  <em>Fruit</em>
-                </div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Price:</label>
-                </div>
-                <div class="cell">$1.04</div>
-              </div>
-              <div class="row">
-                <div class="cell">
-                  <label>Quantity:</label>
-                </div>
-                <div class="cell">
-                  <input type="number" v-model="inventory.cherries" />
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="card-footer">
-            <button class="btn btn-light">Add to cart</button>
-          </div>
-        </div>
+        <ProductCard
+          v-for="(product, index) in inventory.slice(0, 3)"
+          :key="product.id"
+          class="card"
+          :index="index"
+          :product="product"
+          :addToCart="addToCart"
+        />
       </div>
     </main>
   </div>
 </template>
 
 <script>
-import food from '../food.json';
-
+import ProductCard from '@/components/ProductCard.vue';
 export default {
   name: 'Home',
-  data() {
-    return {
-      inventory: food,
-    };
+  props: ['inventory', 'addToCart'],
+  components: {
+    ProductCard,
   },
-  components: {},
+  mounted() {
+    this.inventory.forEach((item) => {
+      if (item.quantity === undefined) {
+        item.quantity = 0;
+      }
+    });
+  },
 };
 </script>
+
+<style>
+.recommended-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 0 15px;
+}
+
+.product-item {
+  flex: 0 0 calc(33.333% - 20px);
+  min-width: 250px;
+  max-width: 350px;
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .product-item {
+    flex: 0 0 calc(50% - 20px);
+  }
+}
+
+@media (max-width: 640px) {
+  .product-item {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+</style>
