@@ -1,4 +1,4 @@
-<!-- TODO: Checkout button functionality. Total sum, add to pastOrders page, obtain basic info form such as name -->
+<!-- TODO:  -->
 
 <template>
   <aside class="cart-container">
@@ -44,7 +44,9 @@
         </p>
         <div class="spread">
           <span><strong>Total:</strong> ${{ calculateTotal() }}</span>
-          <button class="btn btn-light">Checkout</button>
+          <router-link to="/checkout">
+            <button class="btn btn-light">Checkout</button>
+          </router-link>
         </div>
       </div>
     </div>

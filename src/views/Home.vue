@@ -13,7 +13,7 @@
 
       <div class="recommended">
         <ProductCard
-          v-for="(product, index) in inventory.slice(0, 6)"
+          v-for="(product, index) in highestPricedItems"
           :key="product.id"
           class="card"
           :index="index"
@@ -32,6 +32,14 @@ export default {
   props: ['inventory', 'addToCart'],
   components: {
     ProductCard,
+  },
+  computed: {
+    highestPricedItems() {
+      return this.inventory
+        .slice()
+        .sort((a, b) => b.price.USD - a.price.USD)
+        .slice(0, 6);
+    },
   },
   mounted() {
     this.inventory.forEach((item) => {

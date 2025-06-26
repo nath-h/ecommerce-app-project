@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-title">{{ product.name }}</div>
     <div class="card-body">
-      <i class="icofont-10x icofont-{{ product.icon }}"></i>
+      <i :class="`icofont-5x icofont-${product.icon}`"></i>
       <form>
         <div class="row">
           <div class="cell">
@@ -17,7 +17,7 @@
           <div class="cell">
             <label>Price:</label>
           </div>
-          <div class="cell">${{ product.price.USD }}</div>
+          <div class="cell">${{ product.price.USD.toFixed(2) }}</div>
         </div>
         <div class="row">
           <div class="cell">

@@ -1,4 +1,5 @@
-<!-- TODO: Display icon images with the ProductCard on Home and PastOrders. I believe we will only need to modify the ProductCard to get it working on both pages. -->
+<!-- TODO: 
+           -->
 
 <template>
   <header class="top-bar spread">
@@ -13,13 +14,24 @@
       <router-link to="/past-orders" class="top-bar-link">
         <span>Past Orders</span>
       </router-link>
+      <router-link to="/checkout" class="top-bar-link">
+        <span>Checkout</span>
+      </router-link>
     </nav>
     <a href="#" class="top-bar-cart-link" @click.prevent="toggleSidebar">
       <i class="icofont-cart-alt icofont-1x"></i>
       <span>Cart ({{ totalQuantity }})</span>
     </a>
   </header>
-  <router-view :inventory="inventory" :addToCart="addToCart" />
+  <router-view
+    :inventory="inventory"
+    :addToCart="addToCart"
+    :cart="cart"
+    :completeOrder="completeOrder"
+    :pastOrders="pastOrders"
+    @clear-orders="clearOrders"
+    @delete-order="deleteOrder"
+  />
   <Sidebar
     v-if="showSidebar"
     :toggle="toggleSidebar"
@@ -42,6 +54,7 @@ export default {
       showSidebar: false,
       inventory: food,
       cart: {},
+      pastOrders: [],
     };
   },
   computed: {
@@ -67,6 +80,18 @@ export default {
     },
     removeItem(name) {
       delete this.cart[name];
+    },
+    completeOrder(orderData) {
+      this.pastOrders.push(orderData);
+      this.cart = {};
+      this.showSidebar = false;
+      return Promise.resolve();
+    },
+    deleteOrder(orderId) {
+      this.pastOrders = this.pastOrders.filter((order) => order.id !== orderId);
+    },
+    clearOrders() {
+      this.pastOrders = [];
     },
   },
 };
