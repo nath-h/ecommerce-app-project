@@ -74,6 +74,7 @@ export default {
       }
       if (!this.cart[name]) this.cart[name] = 0;
       this.cart[name] += quantity;
+      this.showSidebar = true;
     },
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;

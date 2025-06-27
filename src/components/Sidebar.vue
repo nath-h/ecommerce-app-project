@@ -44,7 +44,7 @@
         </p>
         <div class="spread">
           <span><strong>Total:</strong> ${{ calculateTotal() }}</span>
-          <router-link to="/checkout">
+          <router-link to="/checkout" @click="toggle">
             <button class="btn btn-light">Checkout</button>
           </router-link>
         </div>
