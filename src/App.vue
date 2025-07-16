@@ -1,4 +1,34 @@
-<!-- TODO: 
+<!-- TODO:  
+              FULL REHAUL:
+          Rewrite everything using Pinia
+              USER FUNCTIONALITY:
+          Guest checkout (should just be able to edit the checkout page)
+          Coupon/discount code functionality (for now just the ability to discount something, admin panel to add/remove/edit later)
+          Login, registration, password reset
+          Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
+          //ASK claude what if anything i need to do to make things mobile friendly. see if vue does this by default
+          Search, sort, filter capabilites on product/recommended page 
+          Individual product pages with description of product
+          Persistent storage for cart as it refreshes each page (may need to wait until db added)
+          Order history saved to user account
+          Fake payment integration (stripe test mode?)
+          Order confirmation and email receipt
+
+              ADMIN FUNCTIONALITY:
+          Set flag for an admin account to giv access to admin dashboard
+          Add/remove items from display
+          Add/delete accounts (or disable for data integrity)
+          Cancel/edit orders
+          Order status tracking/updates (may not be worth it)
+          Basic analytics such as sales, popular products
+          Integrate an api somehow (could be stripe test)
+
+              DATABASE FUNCTIONALITY:
+          Inventory tracking (can't order more than in stock)
+          Check to ensure 2 orders don't go through at once and out of stock things because of a double order
+
+
+
            -->
 
 <template>
