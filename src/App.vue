@@ -1,12 +1,9 @@
-<!-- TODO:  
-              FULL REHAUL:
-          Rewrite everything using Pinia
+<!-- TODO:              
               USER FUNCTIONALITY:
-          Guest checkout (should just be able to edit the checkout page)
-          Coupon/discount code functionality (for now just the ability to discount something, admin panel to add/remove/edit later)
+          Differetiate between order total and total after coupon in PastOrders.vue when checking out
+          Guest checkout (should just be able to edit the checkout page)         
           Login, registration, password reset
           Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
-          //ASK claude what if anything i need to do to make things mobile friendly. see if vue does this by default
           Search, sort, filter capabilites on product/recommended page 
           Individual product pages with description of product
           Persistent storage for cart as it refreshes each page (may need to wait until db added)
@@ -15,6 +12,7 @@
           Order confirmation and email receipt
 
               ADMIN FUNCTIONALITY:
+          Add/disable/edit discount codes
           Set flag for an admin account to giv access to admin dashboard
           Add/remove items from display
           Add/delete accounts (or disable for data integrity)
@@ -27,9 +25,83 @@
           Inventory tracking (can't order more than in stock)
           Check to ensure 2 orders don't go through at once and out of stock things because of a double order
 
+-->
 
+<template>
+  <header class="top-bar spread">
+    <nav class="top-bar-nav">
+      <router-link to="/" class="top-bar-link">
+        <i class="icofont-spoon-and-fork"></i>
+        <span>Home</span>
+      </router-link>
+      <router-link to="/products" class="top-bar-link">
+        <span>Products</span>
+      </router-link>
+      <router-link to="/past-orders" class="top-bar-link">
+        <span>Past Orders</span>
+      </router-link>
+      <router-link to="/checkout" class="top-bar-link">
+        <span>Checkout</span>
+      </router-link>
+    </nav>
+    <a
+      href="#"
+      class="top-bar-cart-link"
+      @click.prevent="store.toggleSidebar()"
+    >
+      <i class="icofont-cart-alt icofont-1x"></i>
+      <span>Cart ({{ store.totalQuantity }})</span>
+    </a>
+  </header>
+  <router-view />
+  <Sidebar v-if="store.showSidebar" />
+</template>
 
-           -->
+<script>
+import Sidebar from '@/components/Sidebar.vue';
+import { useEcommerceStore } from '@/stores/ecommerce';
+
+export default {
+  components: {
+    Sidebar,
+  },
+  setup() {
+    const store = useEcommerceStore();
+
+    // Initialize inventory on app load
+    store.initializeInventory();
+
+    return {
+      store,
+    };
+  },
+};
+</script>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
+}
+</style>
+
+<!-- App.vue, previous 
 
 <template>
   <header class="top-bar spread">
@@ -150,3 +222,4 @@ nav a.router-link-exact-active {
   color: #42b983;
 }
 </style>
+-->
