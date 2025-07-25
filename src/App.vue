@@ -1,6 +1,9 @@
 <!-- TODO:              
+              HOUSEKEEPING:
+          Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is likely duplicated in several places
+          
               USER FUNCTIONALITY:
-          Differetiate between order total and total after coupon in PastOrders.vue when checking out
+          Differentiate between order total and total after coupon in PastOrders.vue when checking out
           Guest checkout (should just be able to edit the checkout page)         
           Login, registration, password reset
           Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)

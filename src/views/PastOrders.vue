@@ -26,6 +26,14 @@
               <p class="order-customer">
                 <strong>Customer:</strong> {{ order.customer.name }}
               </p>
+              <p
+                class="order-total-header"
+                v-if="order.subtotal.toFixed(2) !== order.total.toFixed(2)"
+              >
+                <strong
+                  >Order Subtotal: ${{ order.subtotal.toFixed(2) }}
+                </strong>
+              </p>
               <p class="order-total-header">
                 <strong>Order Total: ${{ order.total.toFixed(2) }}</strong>
               </p>
@@ -48,7 +56,9 @@
               <td>Product</td>
               <td>Price</td>
               <td>Quantity</td>
-              <td>Total</td>
+              <td v-if="hasDiscounts(order)">Total Before Coupon</td>
+              <td v-if="hasDiscounts(order)">Total After Coupon</td>
+              <td v-else>Total</td>
               <td><span class="sr-only">Actions</span></td>
             </tr>
           </thead>
@@ -56,10 +66,32 @@
             <tr v-for="item in order.items" :key="`${order.id}-${item.name}`">
               <td><i :class="`icofont-${item.icon} icofont-4x`"></i></td>
               <td>{{ item.name }}</td>
-              <td>${{ item.price.toFixed(2) }}</td>
+              <td>
+                <span v-if="item.originalTotal !== item.discountedTotal">
+                  <del style="color: red; margin-right: 8px">
+                    ${{ item.price.toFixed(2) }}
+                  </del>
+                  <span style="color: #42b983; font-weight: bold">
+                    ${{ item.discountedPrice.toFixed(2) }}
+                  </span>
+                </span>
+                <span v-else> ${{ item.price.toFixed(2) }} </span>
+              </td>
               <td>{{ item.quantity }}</td>
-              <td>${{ order.total.toFixed(2) }}</td>
-              <!-- Fix this to show an asterisk when a discount as been applied-->
+              <template v-if="hasDiscounts(order)">
+                <td>${{ item.originalTotal.toFixed(2) }}</td>
+                <td>
+                  <span v-if="item.originalTotal !== item.discountedTotal">
+                    <del style="color: red; margin-right: 8px"
+                      >${{ item.originalTotal.toFixed(2) }}
+                    </del>
+                    <span style="color: #42b983; font-weight: bold">
+                      <strong>${{ item.discountedTotal.toFixed(2) }} </strong>
+                    </span>
+                  </span>
+                </td>
+              </template>
+              <td v-else>${{ item.originalTotal.toFixed(2) }}</td>
               <td>
                 <button
                   class="btn btn-dark"
@@ -101,10 +133,17 @@ export default {
       });
     };
 
+    const hasDiscounts = (order) => {
+      return order.items.some(
+        (item) => item.originalTotal !== item.discountedTotal
+      );
+    };
+
     return {
       store,
       formatDate,
       addAllToCart,
+      hasDiscounts,
     };
   },
 };

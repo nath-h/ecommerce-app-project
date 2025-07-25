@@ -1,4 +1,5 @@
-<!-- TODO: Edit to personalize, rewrite entirely. Used AI to get functionality up and would like to rewrite it myself to learn. -->
+<!-- TODO:  Needs heavy refactoring
+            Edit to personalize, rewrite entirely. Used AI to get functionality up and would like to rewrite it myself to learn. -->
 
 <template>
   <main class="wrapper">
@@ -178,7 +179,7 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEcommerceStore } from '@/stores/ecommerce';
 
@@ -201,7 +202,71 @@ export default {
     const applyCoupon = () => {
       if (store.applyCoupon(couponCode.value)) {
         couponCode.value = '';
+        calculateItemDiscounts();
       }
+    };
+
+    const itemDiscounts = ref({});
+
+    const calculateItemDiscounts = () => {
+      const discounts = {};
+
+      if (!store.activeCoupon) {
+        Object.keys(store.cart).forEach((name) => {
+          discounts[name] = {
+            discountedPrice: store.getProductPrice(name),
+            discountedTotal: store.cart[name] * store.getProductPrice(name),
+          };
+        });
+      } else {
+        Object.entries(store.cart).forEach(([name, quantity]) => {
+          const originalPrice = store.getProductPrice(name);
+          const originalTotal = quantity * originalPrice;
+          const coupon = store.activeCoupon;
+          let itemDiscount = 0;
+
+          if (coupon.type === 'percentage') {
+            const totalDiscount = store.couponDiscount;
+            const orderSubtotal = store.cartSubtotal;
+            const itemProportion = originalTotal / orderSubtotal;
+            itemDiscount = totalDiscount * itemProportion;
+            itemDiscount = Math.min(itemDiscount, originalTotal);
+          } else if (coupon.type === 'fixed') {
+            const totalDiscount = store.couponDiscount;
+            const orderSubtotal = store.cartSubtotal;
+            const itemProportion = originalTotal / orderSubtotal;
+            itemDiscount = totalDiscount * itemProportion;
+            itemDiscount = Math.min(itemDiscount, originalTotal);
+          }
+          const discountedTotal = originalTotal - itemDiscount;
+          discounts[name] = {
+            discountedPrice: discountedTotal / quantity,
+            discountedTotal: discountedTotal,
+          };
+        });
+      }
+      itemDiscounts.value = discounts;
+    };
+
+    watch(
+      () => [store.cart, store.activeCoupon, store.couponDiscount],
+      () => {
+        calculateItemDiscounts();
+      },
+      { immediate: true, deep: true }
+    );
+
+    const getDiscountedPrice = (productName) => {
+      return (
+        itemDiscounts.value[productName]?.discountedPrice ||
+        store.getProductPrice(productName)
+      );
+    };
+    const getDiscountedItemTotal = (productName, quantity) => {
+      return (
+        itemDiscounts.value[productName]?.discountedTotal ||
+        quantity * store.getProductPrice(productName)
+      );
     };
 
     const submitOrder = async () => {
@@ -214,11 +279,33 @@ export default {
           customer: { ...customerInfo.value },
           items: Object.entries(store.cart).map(([name, quantity]) => {
             const product = store.inventory.find((p) => p.name === name);
+            const originalTotal = quantity * product.price.USD;
+            let discountedTotal = originalTotal;
+            let itemDiscount = 0;
+            if (store.activeCoupon) {
+              const coupon = store.activeCoupon;
+              if (coupon.type === 'percentage') {
+                const totalDiscount = store.couponDiscount;
+                const orderSubtotal = store.cartSubtotal;
+                const itemProportion = originalTotal / orderSubtotal;
+                itemDiscount = totalDiscount * itemProportion;
+                itemDiscount = Math.min(itemDiscount, originalTotal);
+              } else if (coupon.type === 'fixed') {
+                const totalDiscount = store.couponDiscount;
+                const orderSubtotal = store.cartSubtotal;
+                const itemProportion = originalTotal / orderSubtotal;
+                itemDiscount = totalDiscount * itemProportion;
+                itemDiscount = Math.min(itemDiscount, originalTotal);
+              }
+              discountedTotal = originalTotal - itemDiscount;
+            }
             return {
               name,
               quantity,
               price: product.price.USD,
-              total: quantity * product.price.USD,
+              discountedPrice: discountedTotal / quantity,
+              originalTotal: originalTotal,
+              discountedTotal: parseFloat(discountedTotal.toFixed(2)),
               icon: product.icon,
             };
           }),
@@ -242,6 +329,8 @@ export default {
       customerInfo,
       applyCoupon,
       submitOrder,
+      getDiscountedPrice,
+      getDiscountedItemTotal,
     };
   },
 };
