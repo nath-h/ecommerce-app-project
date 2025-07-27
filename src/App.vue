@@ -1,6 +1,7 @@
 <!-- TODO:              
               HOUSEKEEPING:
-          Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is likely duplicated in several places
+          Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is
+          likely duplicated in several places
           
               USER FUNCTIONALITY:
           Cancel/edit orders (if not complete, simulate timeframe)
