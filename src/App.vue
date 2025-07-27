@@ -3,23 +3,22 @@
           Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is likely duplicated in several places
           
               USER FUNCTIONALITY:
-          Differentiate between order total and total after coupon in PastOrders.vue when checking out
-          Guest checkout (should just be able to edit the checkout page)         
+          Cancel/edit orders (if not complete, simulate timeframe)
+          Order confirmation and email receipt
           Login, registration, password reset
+          Order history saved to user account
+          Guest checkout (should just be able to edit the checkout page)         
           Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
           Search, sort, filter capabilites on product/recommended page 
           Individual product pages with description of product
-          Persistent storage for cart as it refreshes each page (may need to wait until db added)
-          Order history saved to user account
           Fake payment integration (stripe test mode?)
-          Order confirmation and email receipt
 
               ADMIN FUNCTIONALITY:
+          Cancel/edit orders
           Add/disable/edit discount codes
-          Set flag for an admin account to giv access to admin dashboard
+          Set flag for an admin account to give access to admin dashboard
           Add/remove items from display
           Add/delete accounts (or disable for data integrity)
-          Cancel/edit orders
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
           Integrate an api somehow (could be stripe test)
@@ -37,13 +36,25 @@
         <i class="icofont-spoon-and-fork"></i>
         <span>Home</span>
       </router-link>
-      <router-link to="/products" class="top-bar-link">
+      <router-link
+        to="/products"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Products</span>
       </router-link>
-      <router-link to="/past-orders" class="top-bar-link">
+      <router-link
+        to="/past-orders"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Past Orders</span>
       </router-link>
-      <router-link to="/checkout" class="top-bar-link">
+      <router-link
+        to="/checkout"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Checkout</span>
       </router-link>
     </nav>
@@ -61,6 +72,7 @@
 </template>
 
 <script>
+import { onMounted } from 'vue';
 import Sidebar from '@/components/Sidebar.vue';
 import { useEcommerceStore } from '@/stores/ecommerce';
 
@@ -71,8 +83,9 @@ export default {
   setup() {
     const store = useEcommerceStore();
 
-    // Initialize inventory on app load
-    store.initializeInventory();
+    onMounted(() => {
+      store.initializeStore();
+    });
 
     return {
       store,

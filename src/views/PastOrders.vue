@@ -1,4 +1,4 @@
-<!--TODO: Differetiate between order total and total after coupon-->
+<!--TODO: -->
 
 <template>
   <main class="wrapper">
@@ -10,6 +10,13 @@
         style="margin-bottom: 20px"
       >
         Clear All Orders
+      </button>
+      <button
+        @click="store.clearAllStoredData()"
+        class="btn btn-danger"
+        style="margin-bottom: 20px; margin-left: 8px"
+      >
+        Clear All Locally Stored Data
       </button>
 
       <!-- Display each order -->
@@ -54,9 +61,8 @@
             <tr>
               <td><span class="sr-only">Product Image</span></td>
               <td>Product</td>
-              <td>Price</td>
+              <td>Price (each)</td>
               <td>Quantity</td>
-              <td v-if="hasDiscounts(order)">Total Before Coupon</td>
               <td v-if="hasDiscounts(order)">Total After Coupon</td>
               <td v-else>Total</td>
               <td><span class="sr-only">Actions</span></td>
@@ -79,7 +85,6 @@
               </td>
               <td>{{ item.quantity }}</td>
               <template v-if="hasDiscounts(order)">
-                <td>${{ item.originalTotal.toFixed(2) }}</td>
                 <td>
                   <span v-if="item.originalTotal !== item.discountedTotal">
                     <del style="color: red; margin-right: 8px"
@@ -110,6 +115,13 @@
     </div>
     <div v-else>
       <p>No past orders to display.</p>
+      <button
+        @click="store.clearAllStoredData()"
+        class="btn btn-danger"
+        style="margin-bottom: 20px"
+      >
+        Clear All Locally Stored Data
+      </button>
     </div>
   </main>
 </template>

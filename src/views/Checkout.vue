@@ -179,7 +179,7 @@
 </template>
 
 <script>
-import { ref, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEcommerceStore } from '@/stores/ecommerce';
 
@@ -199,118 +199,44 @@ export default {
       notes: '',
     });
 
+    onMounted(() => {
+      customerInfo.value = {
+        name: store.userPreferences.name || '',
+        email: store.userPreferences.email || '',
+        phone: store.userPreferences.phone || '',
+        address: store.userPreferences.address || '',
+        notes: '',
+      };
+    });
+
+    const enrichedCartItems = computed(() => {
+      return Object.entries(store.cart).map(([name, quantity]) => {
+        const product = store.inventory.find((p) => p.name === name);
+        return {
+          name,
+          quantity,
+          price: product.price.USD,
+          total: quantity * product.price.USD,
+          icon: product.icon,
+          product,
+        };
+      });
+    });
+
     const applyCoupon = () => {
       if (store.applyCoupon(couponCode.value)) {
         couponCode.value = '';
-        calculateItemDiscounts();
       }
-    };
-
-    const itemDiscounts = ref({});
-
-    const calculateItemDiscounts = () => {
-      const discounts = {};
-
-      if (!store.activeCoupon) {
-        Object.keys(store.cart).forEach((name) => {
-          discounts[name] = {
-            discountedPrice: store.getProductPrice(name),
-            discountedTotal: store.cart[name] * store.getProductPrice(name),
-          };
-        });
-      } else {
-        Object.entries(store.cart).forEach(([name, quantity]) => {
-          const originalPrice = store.getProductPrice(name);
-          const originalTotal = quantity * originalPrice;
-          const coupon = store.activeCoupon;
-          let itemDiscount = 0;
-
-          if (coupon.type === 'percentage') {
-            const totalDiscount = store.couponDiscount;
-            const orderSubtotal = store.cartSubtotal;
-            const itemProportion = originalTotal / orderSubtotal;
-            itemDiscount = totalDiscount * itemProportion;
-            itemDiscount = Math.min(itemDiscount, originalTotal);
-          } else if (coupon.type === 'fixed') {
-            const totalDiscount = store.couponDiscount;
-            const orderSubtotal = store.cartSubtotal;
-            const itemProportion = originalTotal / orderSubtotal;
-            itemDiscount = totalDiscount * itemProportion;
-            itemDiscount = Math.min(itemDiscount, originalTotal);
-          }
-          const discountedTotal = originalTotal - itemDiscount;
-          discounts[name] = {
-            discountedPrice: discountedTotal / quantity,
-            discountedTotal: discountedTotal,
-          };
-        });
-      }
-      itemDiscounts.value = discounts;
-    };
-
-    watch(
-      () => [store.cart, store.activeCoupon, store.couponDiscount],
-      () => {
-        calculateItemDiscounts();
-      },
-      { immediate: true, deep: true }
-    );
-
-    const getDiscountedPrice = (productName) => {
-      return (
-        itemDiscounts.value[productName]?.discountedPrice ||
-        store.getProductPrice(productName)
-      );
-    };
-    const getDiscountedItemTotal = (productName, quantity) => {
-      return (
-        itemDiscounts.value[productName]?.discountedTotal ||
-        quantity * store.getProductPrice(productName)
-      );
     };
 
     const submitOrder = async () => {
       isSubmitting.value = true;
 
       try {
-        const orderData = {
-          id: Date.now(),
-          date: new Date().toISOString(),
+        const orderData = store.createOrderData({
           customer: { ...customerInfo.value },
-          items: Object.entries(store.cart).map(([name, quantity]) => {
-            const product = store.inventory.find((p) => p.name === name);
-            const originalTotal = quantity * product.price.USD;
-            let discountedTotal = originalTotal;
-            let itemDiscount = 0;
-            if (store.activeCoupon) {
-              const coupon = store.activeCoupon;
-              if (coupon.type === 'percentage') {
-                const totalDiscount = store.couponDiscount;
-                const orderSubtotal = store.cartSubtotal;
-                const itemProportion = originalTotal / orderSubtotal;
-                itemDiscount = totalDiscount * itemProportion;
-                itemDiscount = Math.min(itemDiscount, originalTotal);
-              } else if (coupon.type === 'fixed') {
-                const totalDiscount = store.couponDiscount;
-                const orderSubtotal = store.cartSubtotal;
-                const itemProportion = originalTotal / orderSubtotal;
-                itemDiscount = totalDiscount * itemProportion;
-                itemDiscount = Math.min(itemDiscount, originalTotal);
-              }
-              discountedTotal = originalTotal - itemDiscount;
-            }
-            return {
-              name,
-              quantity,
-              price: product.price.USD,
-              discountedPrice: discountedTotal / quantity,
-              originalTotal: originalTotal,
-              discountedTotal: parseFloat(discountedTotal.toFixed(2)),
-              icon: product.icon,
-            };
-          }),
-          total: parseFloat(store.cartTotal),
-        };
+          cartItems: enrichedCartItems.value,
+        });
 
         await store.completeOrder(orderData);
         router.push('/past-orders');
@@ -321,16 +247,14 @@ export default {
         isSubmitting.value = false;
       }
     };
-
     return {
       store,
       isSubmitting,
       couponCode,
       customerInfo,
+      enrichedCartItems,
       applyCoupon,
       submitOrder,
-      getDiscountedPrice,
-      getDiscountedItemTotal,
     };
   },
 };
