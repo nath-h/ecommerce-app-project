@@ -2,6 +2,8 @@
               HOUSEKEEPING:
           Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is
           likely duplicated in several places
+          Coupon BIGORDER allows you to make your cart total $50+, add another item to cart, and remove previous items making total
+          <$50 but still allows use of that coupon. Will need to add a check every time you go back to checkout or when placing order.
           
               USER FUNCTIONALITY:
           Cancel/edit orders (if not complete, simulate timeframe)
@@ -33,7 +35,11 @@
 <template>
   <header class="top-bar spread">
     <nav class="top-bar-nav">
-      <router-link to="/" class="top-bar-link">
+      <router-link
+        to="/"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <i class="icofont-spoon-and-fork"></i>
         <span>Home</span>
       </router-link>

@@ -28,10 +28,10 @@
           <tbody>
             <tr v-for="(quantity, name) in store.cart" :key="name">
               <td>{{ name }}</td>
-              <td>${{ store.getProductPrice(name).toFixed(2) }}</td>
-              <td>{{ quantity }}</td>
+              <td>{{ $formatCurrency(store.getProductPrice(name)) }}</td>
+              <td>{{ $formatNumber(quantity) }}</td>
               <td>
-                ${{ (quantity * store.getProductPrice(name)).toFixed(2) }}
+                {{ $formatCurrency(quantity * store.getProductPrice(name)) }}
               </td>
             </tr>
           </tbody>
@@ -39,7 +39,7 @@
             <tr>
               <td colspan="3"><strong>Subtotal:</strong></td>
               <td>
-                <strong>${{ store.cartSubtotal.toFixed(2) }}</strong>
+                <strong>{{ $formatCurrency(store.cartSubtotal) }}</strong>
               </td>
             </tr>
             <tr v-if="store.activeCoupon" class="coupon-row">
@@ -59,13 +59,13 @@
                 </div>
               </td>
               <td class="discount-amount">
-                <strong>-${{ store.couponDiscount.toFixed(2) }}</strong>
+                <strong>-{{ $formatCurrency(store.couponDiscount) }}</strong>
               </td>
             </tr>
             <tr class="total-row">
               <td colspan="3"><strong>Total:</strong></td>
               <td>
-                <strong>${{ store.cartTotal }}</strong>
+                <strong>{{ $formatCurrency(store.cartTotal) }}</strong>
               </td>
             </tr>
           </tfoot>
@@ -87,7 +87,7 @@
             <button
               @click="applyCoupon"
               class="btn btn-secondary"
-              :disabled="!couponCode.trim() || store.activeCoupon"
+              :disabled="store.activeCoupon"
             >
               Apply
             </button>
@@ -96,9 +96,8 @@
             {{ store.couponError }}
           </div>
           <div v-if="store.activeCoupon" class="success-message">
-            Coupon applied successfully! You saved ${{
-              store.couponDiscount.toFixed(2)
-            }}
+            Coupon applied successfully! You saved
+            {{ $formatCurrency(store.couponDiscount) }}
           </div>
         </div>
       </div>
@@ -225,6 +224,8 @@ export default {
 
     const applyCoupon = () => {
       if (store.applyCoupon(couponCode.value)) {
+        couponCode.value = couponCode.value.toUpperCase();
+      } else {
         couponCode.value = '';
       }
     };

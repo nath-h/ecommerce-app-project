@@ -30,9 +30,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
         code: 'BIGORDER',
         type: 'percentage',
         value: 15,
-        description: '15% off orders over $50',
+        description: '15% off orders over $50. Maximum discount is $500.',
         minOrder: 50,
-        maxDiscount: 20,
+        maxDiscount: 500,
         isActive: true,
       },
       {
@@ -127,7 +127,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       } else if (coupon.type === 'fixed') {
         discount = coupon.value;
       }
-      return Math.min(discount, subtotal);
+      return parseFloat(Math.min(discount, subtotal).toFixed(2));
     },
 
     highestPricedItems: (state) => {
@@ -341,8 +341,10 @@ export const useEcommerceStore = defineStore('ecommerce', {
           coupon: this.activeCoupon
             ? {
                 code: this.activeCoupon.code,
-                discount: this.activeCoupon.discount,
+                discount: this.couponDiscount,
                 description: this.activeCoupon.description,
+                type: this.activeCoupon.type,
+                value: this.activeCoupon.value,
               }
             : null,
           subtotal: this.cartSubtotal,

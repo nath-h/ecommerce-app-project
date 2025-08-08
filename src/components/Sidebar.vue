@@ -29,9 +29,11 @@
                 ></i>
               </td>
               <td>{{ key }}</td>
-              <td>${{ store.getProductPrice(key).toFixed(2) }}</td>
-              <td class="center">{{ quantity }}</td>
-              <td>${{ (quantity * store.getProductPrice(key)).toFixed(2) }}</td>
+              <td>{{ $formatCurrency(store.getProductPrice(key)) }}</td>
+              <td class="center">{{ $formatNumber(quantity) }}</td>
+              <td>
+                {{ $formatCurrency(quantity * store.getProductPrice(key)) }}
+              </td>
               <td class="center">
                 <button
                   @click="store.removeFromCart(key)"
@@ -48,7 +50,10 @@
           <em>No items in cart</em>
         </p>
         <div class="spread">
-          <span><strong>Total:</strong> ${{ store.cartTotal }}</span>
+          <span
+            ><strong>Total:</strong>
+            {{ $formatCurrency(store.cartTotal) }}</span
+          >
           <router-link to="/checkout" @click="store.toggleSidebar">
             <button class="btn btn-light">Checkout</button>
           </router-link>
