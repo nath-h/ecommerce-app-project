@@ -216,9 +216,22 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.saveCartToLocalStorage();
     },
 
+    validateActiveCoupon() {
+      if (!this.activeCoupon) return;
+
+      const subtotal = this.cartSubtotal;
+      if (subtotal < this.activeCoupon.minOrder) {
+        this.couponError = `Minimum order of $${this.activeCoupon.minOrder.toFixed(
+          2
+        )} required for this coupon`;
+        this.activeCoupon = null;
+      }
+    },
+
     removeFromCart(name) {
       delete this.cart[name];
       this.saveCartToLocalStorage();
+      this.validateActiveCoupon();
     },
 
     toggleSidebar() {
@@ -234,7 +247,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       const product = this.inventory.find(
         (p) => p.name.toLowerCase() === name.toLowerCase()
       );
-      return product ? product.icon : 'question';
+      return product ? product.icon : 'spoon-and-fork';
     },
 
     applyCoupon(couponCode) {
