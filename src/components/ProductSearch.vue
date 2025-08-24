@@ -92,7 +92,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
-  background-color: darkgrey;
+  background-color: slategray;
   color: black;
   cursor: pointer;
 }
@@ -108,7 +108,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
-  background-color: darkgrey;
+  background-color: slategrey;
 }
 
 .search-input::placeholder {

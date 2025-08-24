@@ -1,21 +1,13 @@
 <!-- TODO:              
-              HOUSEKEEPING:
-          Lots of duplicate code leftover from modifying the checkout page. Discount logic per item and for entire order total is
-          likely duplicated in several places
-          Change name/design from Splendid Food: styles are in splash.jpg, _splash.sass, _var.sass, root.css, h1 in Home
-          
               USER FUNCTIONALITY:
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
           Cancel/edit orders (if not complete, simulate timeframe)
-          Order confirmation and email receipt
-          Login, registration, password reset
-          Order history saved to user account
+          Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
           Guest checkout (should just be able to edit the checkout page)         
-          Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
-          Individual product pages with description of product
           Fake payment integration (stripe test mode?)
-
-              ADMIN FUNCTIONALITY:
+          Individual product pages with description of product
+          
+          ADMIN FUNCTIONALITY:
           Cancel/edit orders
           Add/disable/edit discount codes
           Set flag for an admin account to give access to admin dashboard
@@ -23,9 +15,12 @@
           Add/delete accounts (or disable for data integrity)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
-          Integrate an api somehow (could be stripe test)
-
-              DATABASE FUNCTIONALITY:
+          
+          DATABASE FUNCTIONALITY:
+          Use Node.js, Express.js, SQLite, turn json file into API call - find out whether I should use a separate DB like postgres    
+          Login, registration, panssword reset    
+          Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
+          Order history saved to user account
           Inventory tracking (can't order more than in stock)
           Check to ensure 2 orders don't go through at once and out of stock things because of a double order
 
