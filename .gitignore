@@ -28,6 +28,7 @@ yarn-error.log*
 lerna-debug.log*
 .prisma/client/
 docker-compose.override.yml
+docker-compose.yml
 *.db
 *.sqlite
 dist/
