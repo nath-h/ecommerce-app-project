@@ -33,7 +33,6 @@ CREATE TABLE "public"."Order" (
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "public"."OrderItem" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,

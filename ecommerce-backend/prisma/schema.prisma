@@ -8,34 +8,53 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  firstName    String
+  lastName     String
+  password     String
+  phone        String
+  address      String
+  isAdmin      Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  orders       Order[]
+  cart         Cart?
+  adminActions AdminAction[]
 }
 
 model Product {
   id          String      @id @default(cuid())
-  name        String
-  description String
+  name        String      @unique
+  description String?
   price       Decimal     @db.Decimal(6, 2)
+  type        ProductType
+  icon        String      @default("spoon-and-fork")
+  isActive    Boolean     @default(true)
   stock       Int         @default(3)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
+  cartItems   CartItem[]
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  userId     String
-  total      Decimal
-  status     OrderStatus @default(PENDING)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  user       User        @relation(fields: [userId], references: [id])
-  orderItems OrderItem[]
+  id                String      @id @default(cuid())
+  userId            Int
+  subtotal          Decimal     @db.Decimal(6, 2)
+  discount          Decimal?    @db.Decimal(6, 2)
+  total             Decimal     @db.Decimal(6, 2)
+  status            OrderStatus @default(PENDING)
+  notes             String?
+  couponCode        String?
+  couponDiscount    Decimal?    @db.Decimal(6, 2)
+  couponType        String?
+  couponValue       Decimal?    @db.Decimal(6, 2)
+  couponDescription String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User        @relation(fields: [userId], references: [id])
+  orderItems        OrderItem[]
 }
 
 model OrderItem {
@@ -50,10 +69,74 @@ model OrderItem {
   @@unique([orderId, productId])
 }
 
+model Coupon {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  type        CouponType
+  value       Decimal    @db.Decimal(6, 2)
+  description String?
+  minOrder    Decimal    @default(0) @db.Decimal(6, 2)
+  maxDiscount Decimal?   @db.Decimal(6, 2)
+  isActive    Boolean    @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    Int        @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+model AdminAction {
+  id         String          @id @default(cuid())
+  adminId    Int
+  action     AdminActionType
+  entityType String
+  entityId   String
+  details    String?
+  createdAt  DateTime        @default(now())
+  admin      User            @relation(fields: [adminId], references: [id])
+}
+
+enum AdminActionType {
+  CREATED
+  UPDATED
+  DELETED
+  CANCELLED
+  STATUS_CHANGED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
 enum OrderStatus {
   PENDING
-  PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum ProductType {
+  FRUIT
+  VEGETABLE
+  MEAT
+  OTHER
 }

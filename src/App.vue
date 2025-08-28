@@ -58,6 +58,20 @@
       >
         <span>Checkout</span>
       </router-link>
+      <router-link
+        to="/register"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
+        <span>Register</span>
+      </router-link>
+      <router-link
+        to="/login"
+        class="top-bar-link"
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
+        <span>Log In</span>
+      </router-link>
     </nav>
     <a
       href="#"
