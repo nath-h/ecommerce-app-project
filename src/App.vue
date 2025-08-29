@@ -16,12 +16,9 @@
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
           
-          DATABASE FUNCTIONALITY:
-          Use Node.js, Express.js, SQLite, turn json file into API call - find out whether I should use a separate DB like postgres    
-          Login, registration, panssword reset    
-          Form validation for above login, registration, password reset (may already be included in Vue such as on checkout page)
+          DATABASE FUNCTIONALITY:   
           Order history saved to user account
-          Inventory tracking (can't order more than in stock)
+          Inventory tracking (can't order more than in stock, enforce stock in product)
           Check to ensure 2 orders don't go through at once and out of stock things because of a double order
 
 -->

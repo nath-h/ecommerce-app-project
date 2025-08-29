@@ -1,117 +1,119 @@
 <template>
-  <div class="register-container">
-    <div class="register-card">
-      <h2>Create Account</h2>
-      <form @submit.prevent="handleRegister" class="register-form">
-        <div class="form-group">
-          <label for="firstName">First Name</label>
-          <input
-            id="firstName"
-            v-model="formData.firstName"
-            type="text"
-            required
-            :disabled="loading"
-            class="form-input"
-          />
+  <main class="wrapper">
+    <div class="register-container">
+      <div class="register-card">
+        <h2>Create Account</h2>
+        <form @submit.prevent="handleRegister" class="register-form">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input
+              id="firstName"
+              v-model="formData.firstName"
+              type="text"
+              required
+              :disabled="loading"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input
+              id="lastName"
+              v-model="formData.lastName"
+              type="text"
+              required
+              :disabled="loading"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              v-model="formData.email"
+              type="email"
+              required
+              :disabled="loading"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone</label>
+            <input
+              id="phone"
+              v-model="formData.phone"
+              type="tel"
+              required
+              :disabled="loading"
+              class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address</label>
+            <textarea
+              id="address"
+              v-model="formData.address"
+              required
+              :disabled="loading"
+              class="form-input"
+              rows="3"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              v-model="formData.password"
+              type="password"
+              required
+              :disabled="loading"
+              class="form-input"
+              minLength="6"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              v-model="formData.confirmPassword"
+              type="password"
+              required
+              :disabled="loading"
+              class="form-input"
+              minLength="6"
+            />
+          </div>
+
+          <div v-if="error" class="error-message">
+            {{ error }}
+          </div>
+
+          <div v-if="success" class="success-message">
+            {{ success }}
+          </div>
+
+          <button
+            type="submit"
+            :disabled="loading || !isFormValid"
+            class="register-button"
+          >
+            {{ loading ? 'Creating Account' : 'Register' }}
+          </button>
+        </form>
+
+        <div class="login-link">
+          Already have an account?
+          <router-link to="/login">Login Here</router-link>
         </div>
-
-        <div class="form-group">
-          <label for="lastName">Last Name</label>
-          <input
-            id="lastName"
-            v-model="formData.lastName"
-            type="text"
-            required
-            :disabled="loading"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input
-            id="email"
-            v-model="formData.email"
-            type="email"
-            required
-            :disabled="loading"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="phone">Phone</label>
-          <input
-            id="phone"
-            v-model="formData.phone"
-            type="tel"
-            required
-            :disabled="loading"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="address">Address</label>
-          <textarea
-            id="address"
-            v-model="formData.address"
-            required
-            :disabled="loading"
-            class="form-input"
-            rows="3"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            id="password"
-            v-model="formData.password"
-            type="password"
-            required
-            :disabled="loading"
-            class="form-input"
-            minLength="6"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <input
-            id="confirmPassword"
-            v-model="formData.confirmPassword"
-            type="password"
-            required
-            :disabled="loading"
-            class="form-input"
-            minLength="6"
-          />
-        </div>
-
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-
-        <div v-if="success" class="success-message">
-          {{ success }}
-        </div>
-
-        <button
-          type="submit"
-          :disabled="loading || !isFormValid"
-          class="register-button"
-        >
-          {{ loading ? 'Creating Account' : 'Register' }}
-        </button>
-      </form>
-
-      <div class="login-link">
-        Already have an account?
-        <router-link to="/login">Login Here</router-link>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <script>
@@ -163,10 +165,6 @@ export default {
       loading.value = true;
 
       try {
-        const healthCheck = await fetch('http://localhost:5000/');
-        if (!healthCheck.ok) {
-          throw new Error('Backend serer is not responding');
-        }
         const response = await fetch(
           'http://localhost:5000/api/auth/register',
           {
@@ -227,16 +225,14 @@ export default {
 
 <style scoped>
 .register-container {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  padding: 20px;
+  padding: 50px;
 }
 
 .register-card {
-  background: white;
+  background-color: var(--topBarLinkHoverBackground);
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

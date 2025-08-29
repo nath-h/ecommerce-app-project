@@ -128,4 +128,97 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/verify-identity', async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+
+    if (!email || !phone) {
+      return res.status(400).json({
+        error: 'Email and phone are required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Invalid credentials',
+      });
+    }
+
+    const isValidEmail =
+      email.trim().toLowerCase() === user.email.trim().toLowerCase();
+    const isValidPhone = phone.trim() === user.phone.trim();
+
+    if (!isValidEmail) {
+      return res.status(401).json({
+        error: 'Invalid email',
+      });
+    } else if (!isValidPhone) {
+      return res.status(401).json({
+        error: 'Invalid phone',
+      });
+    } else {
+      res.json({
+        message: 'Validation successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Validation error:', error);
+    res.status(500).json({
+      error: 'Internal server error during validation',
+    });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        error: 'Email and new password are required',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long',
+      });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    await prisma.user.update({
+      where: { email: email.trim().toLowerCase() },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Password reset successfuly',
+    });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+    res.status(500).json({
+      error: 'Internal server error during password reset',
+    });
+  }
+});
+
 module.exports = router;

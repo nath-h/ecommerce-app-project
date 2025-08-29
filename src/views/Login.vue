@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h2>Login</h2>
+      <h2>Log In</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
@@ -43,6 +43,10 @@
       <div class="register-link">
         Don't have an account?
         <router-link to="/register">Register Here</router-link>
+      </div>
+      <div class="register-link">
+        Forgot password?
+        <router-link to="/reset-password">Reset Password</router-link>
       </div>
     </div>
   </div>
@@ -110,16 +114,15 @@ export default {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
+  height: 50vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  padding: 20px;
+  padding: 10px;
 }
 
 .login-card {
-  background: white;
+  background-color: var(--topBarLinkHoverBackground);
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -210,6 +213,14 @@ export default {
 }
 
 .register-link a:hover {
+  text-decoration: underline;
+}
+.reset-link a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.reset-link a:hover {
   text-decoration: underline;
 }
 
