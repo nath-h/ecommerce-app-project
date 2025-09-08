@@ -1,22 +1,27 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
+          User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)    
+          Disable login/register button and show logout button when logged in
+          By cart - user details such as preferences, past orders, change password etc    
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
           Cancel/edit orders (if not complete, simulate timeframe)
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
           Guest checkout (should just be able to edit the checkout page)         
           Fake payment integration (stripe test mode?)
-          Individual product pages with description of product
           
           ADMIN FUNCTIONALITY:
+          Admin dashboard
           Cancel/edit orders
           Add/disable/edit discount codes
-          Set flag for an admin account to give access to admin dashboard
+          Disable user account
           Add/remove items from display
           Add/delete accounts (or disable for data integrity)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
           
-          DATABASE FUNCTIONALITY:   
+          DATABASE FUNCTIONALITY: 
+          Individual product pages with description of product
+          Add discount per item (search by item name, find by name, apply to id)  
           Order history saved to user account
           Inventory tracking (can't order more than in stock, enforce stock in product)
           Check to ensure 2 orders don't go through at once and out of stock things because of a double order
@@ -55,29 +60,61 @@
       >
         <span>Checkout</span>
       </router-link>
-      <router-link
-        to="/register"
-        class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()"
-      >
-        <span>Register</span>
-      </router-link>
-      <router-link
-        to="/login"
-        class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()"
-      >
-        <span>Log In</span>
-      </router-link>
+
+      <template v-if="!authStore.isLoggedIn">
+        <router-link
+          to="/register"
+          class="top-bar-link"
+          @click="store.showSidebar && store.toggleSidebar()"
+        >
+          <span>Register</span>
+        </router-link>
+        <router-link
+          to="/login"
+          class="top-bar-link"
+          @click="store.showSidebar && store.toggleSidebar()"
+        >
+          <span>Log In</span>
+        </router-link>
+      </template>
+
+      <template v-if="authStore.isLoggedIn">
+        <router-link to="/profile" class="top-bar-link">
+          <span>Profile</span>
+        </router-link>
+        <router-link
+          v-if="authStore.isAdmin"
+          to="/admin"
+          class="top-bar-link"
+          @click="store.toggleSidebar()"
+        >
+          <span>Admin</span>
+        </router-link>
+        <a
+          href="#"
+          class="top-bar-link logout-link"
+          @click.prevent="handleLogout"
+        >
+          <span>Logout</span>
+        </a>
+      </template>
     </nav>
-    <a
-      href="#"
-      class="top-bar-cart-link"
-      @click.prevent="store.toggleSidebar()"
-    >
-      <i class="icofont-cart-alt icofont-1x"></i>
-      <span>Cart ({{ store.totalQuantity }})</span>
-    </a>
+
+    <div class="cart-section">
+      <a
+        href="#"
+        class="top-bar-cart-link"
+        @click.prevent="store.toggleSidebar()"
+      >
+        <i class="icofont-cart-alt icofont-1x"></i>
+        <span>Cart ({{ store.totalQuantity }})</span>
+      </a>
+      <div v-if="authStore.isLoggedIn" class="user-info">
+        <span class="welcome-text"
+          >Welcome, {{ authStore.user.firstName }}!</span
+        >
+      </div>
+    </div>
   </header>
   <router-view />
   <Sidebar v-if="store.showSidebar" />
@@ -85,8 +122,10 @@
 
 <script>
 import { onMounted } from 'vue';
-import Sidebar from '@/components/Sidebar.vue';
+import { useRouter } from 'vue-router';
 import { useEcommerceStore } from '@/stores/ecommerce';
+import { useAuthStore } from './stores/authStore';
+import Sidebar from '@/components/Sidebar.vue';
 
 export default {
   components: {
@@ -94,13 +133,23 @@ export default {
   },
   setup() {
     const store = useEcommerceStore();
+    const authStore = useAuthStore();
+    const router = useRouter();
+
+    const handleLogout = () => {
+      authStore.logout();
+      router.push('/');
+    };
 
     onMounted(() => {
       store.initializeStore();
+      authStore.initializeAuth();
     });
 
     return {
       store,
+      authStore,
+      handleLogout,
     };
   },
 };
@@ -116,7 +165,7 @@ export default {
 }
 
 nav {
-  padding: 30px;
+  padding: 25px;
 }
 
 nav a {
@@ -126,5 +175,10 @@ nav a {
 
 nav a.router-link-exact-active {
   color: #42b983;
+}
+
+.cart-section {
+  display: flex;
+  align-items: center;
 }
 </style>

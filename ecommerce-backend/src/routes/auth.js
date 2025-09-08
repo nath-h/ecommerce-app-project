@@ -85,17 +85,18 @@ router.post('/login', async (req, res) => {
       where: { email },
     });
 
-    if (!user) {
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!user || !isValidPassword) {
       return res.status(401).json({
         error: 'Invalid credentials',
       });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
+    if (!user.isActive) {
       return res.status(401).json({
-        error: 'Invalid credentials',
+        error:
+          'Your account has been disabled. Please contact an administrator.',
       });
     }
 

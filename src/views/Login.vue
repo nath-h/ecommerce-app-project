@@ -55,11 +55,13 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 
 export default {
   name: 'LoginPage',
   setup() {
     const router = useRouter();
+    const authStore = useAuthStore();
 
     const formData = ref({
       email: '',
@@ -88,8 +90,7 @@ export default {
         const data = await response.json();
 
         if (response.ok) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
+          authStore.login(data.user, data.token);
           router.push('/');
         } else {
           error.value = data.error || 'Login failed';
@@ -114,7 +115,7 @@ export default {
 
 <style scoped>
 .login-container {
-  height: 50vh;
+  min-height: 50vh;
   display: flex;
   align-items: center;
   justify-content: center;
