@@ -1,8 +1,7 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
-          User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)    
-          Disable login/register button and show logout button when logged in
-          By cart - user details such as preferences, past orders, change password etc    
+          Checkout.vue needs refactoring/rewriting. Include stock validation vs cart totals.
+          User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)        
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
           Cancel/edit orders (if not complete, simulate timeframe)
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
@@ -10,16 +9,17 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          Admin dashboard
-          Cancel/edit orders
-          Add/disable/edit discount codes
-          Disable user account
+          Admin dashboard(Admin.vue, already have an /admin route)
+          Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
+          Add/disable/edit discount codes (AdminAction AdminActionType CREATED_COUPON )
+          Disable user account (AdminAction AdminActionType UPDATED_USER User.isActive = false)
           Add/remove items from display
           Add/delete accounts (or disable for data integrity)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
           
           DATABASE FUNCTIONALITY: 
+          Add token time validation (authStore.js?)
           Individual product pages with description of product
           Add discount per item (search by item name, find by name, apply to id)  
           Order history saved to user account
@@ -136,9 +136,9 @@ export default {
     const authStore = useAuthStore();
     const router = useRouter();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
       authStore.logout();
-      router.push('/');
+      router.push('/login?logoutSuccess=true');
     };
 
     onMounted(() => {

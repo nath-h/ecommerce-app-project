@@ -1,4 +1,3 @@
-//add toen time validation
 import { defineStore } from 'pinia';
 
 export const useAuthStore = defineStore('auth', {
@@ -17,7 +16,10 @@ export const useAuthStore = defineStore('auth', {
       }
       return '';
     },
-    isAdmin: (state) => state.isAdmin || false,
+    isAdmin: (state) => {
+      if (!state.user) return false;
+      return state.user.isAdmin || false;
+    },
   },
 
   actions: {

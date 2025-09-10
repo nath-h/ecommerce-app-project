@@ -1,5 +1,3 @@
-<!--TODO: -->
-
 <template>
   <main class="wrapper">
     <h1>Past Orders</h1>
@@ -19,7 +17,6 @@
         Clear All Locally Stored Data
       </button>
 
-      <!-- Display each order -->
       <div
         v-for="order in store.pastOrders"
         :key="order.id"
@@ -67,7 +64,6 @@
           </div>
         </div>
 
-        <!-- Items table for this order -->
         <table class="product-table">
           <thead>
             <tr>

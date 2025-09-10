@@ -22,21 +22,19 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(quantity, key, i) in store.cart" :key="i">
+            <tr v-for="item in store.enrichedCartItems" :key="item.name">
               <td>
-                <i
-                  :class="`icofont-${store.getProductIcon(key)} icofont-3x`"
-                ></i>
+                <i :class="`icofont-${item.icon} icofont-3x`"></i>
               </td>
-              <td>{{ key }}</td>
-              <td>{{ $formatCurrency(store.getProductPrice(key)) }}</td>
-              <td class="center">{{ $formatNumber(quantity) }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ $formatCurrency(item.price) }}</td>
+              <td class="center">{{ $formatNumber(item.quantity) }}</td>
               <td>
-                {{ $formatCurrency(quantity * store.getProductPrice(key)) }}
+                {{ $formatCurrency(item.total) }}
               </td>
               <td class="center">
                 <button
-                  @click="store.removeFromCart(key)"
+                  @click="store.removeFromCart(item.name)"
                   class="btn btn-light cart-remove"
                 >
                   &times;
@@ -46,7 +44,7 @@
           </tbody>
         </table>
 
-        <p class="center" v-if="!Object.keys(store.cart).length">
+        <p class="center" v-if="!store.enrichedCartItems.length">
           <em>No items in cart</em>
         </p>
         <div class="spread">

@@ -1,11 +1,11 @@
-// stores/ecommerce.js
 import { defineStore } from 'pinia';
-import food from '@/food.json';
 
 export const useEcommerceStore = defineStore('ecommerce', {
   state: () => ({
-    inventory: food,
-    cart: {},
+    inventory: [],
+    cart: [],
+    loading: false,
+    error: null,
     pastOrders: [],
     userPreferences: {
       name: '',
@@ -49,46 +49,40 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
   getters: {
     enrichedCartItems: (state) => {
-      return Object.entries(state.cart).map(([name, quantity]) => {
-        const product = state.inventory.find((p) => p.name === name);
+      return state.cart.map((cartItem) => {
+        const product = state.inventory.find((p) => p.name === cartItem.name);
         return {
-          name,
-          quantity,
-          price: product.price.USD,
-          total: quantity * product.price.USD,
-          icon: product.icon,
+          name: cartItem.name,
+          quantity: cartItem.quantity,
+          price: (product ? parseFloat(product.price) : 0).toFixed(2),
+          total: (
+            cartItem.quantity * (product ? parseFloat(product.price) : 0)
+          ).toFixed(2),
+          icon: product ? product.icon : 'spoon-and-fork',
           product,
         };
       });
     },
 
     totalQuantity: (state) => {
-      return Object.values(state.cart).reduce((acc, curr) => {
-        return acc + curr;
-      }, 0);
+      return state.cart.reduce((total, item) => total + item.quantity, 0);
     },
 
     cartSubtotal: (state) => {
-      const total = Object.entries(state.cart).reduce(
-        (acc, [name, quantity]) => {
-          const product = state.inventory.find((p) => p.name === name);
-          const price = product ? product.price.USD : 0;
-          return acc + price * quantity;
-        },
-        0
-      );
+      const total = state.cart.reduce((acc, cartItem) => {
+        const product = state.inventory.find((p) => p.name === cartItem.name);
+        const price = product ? parseFloat(product.price) : 0;
+        return acc + price * cartItem.quantity;
+      }, 0);
       return parseFloat(total.toFixed(2));
     },
 
     cartTotal: (state) => {
-      const subtotal = Object.entries(state.cart).reduce(
-        (acc, [name, quantity]) => {
-          const product = state.inventory.find((p) => p.name === name);
-          const price = product ? product.price.USD : 0;
-          return acc + price * quantity;
-        },
-        0
-      );
+      const subtotal = state.cart.reduce((acc, cartItem) => {
+        const product = state.inventory.find((p) => p.name === cartItem.name);
+        const price = product ? parseFloat(product.price) : 0;
+        return acc + price * cartItem.quantity;
+      }, 0);
       let discount = 0;
       if (state.activeCoupon) {
         const coupon = state.activeCoupon;
@@ -109,14 +103,11 @@ export const useEcommerceStore = defineStore('ecommerce', {
     couponDiscount: (state) => {
       if (!state.activeCoupon) return 0;
 
-      const subtotal = Object.entries(state.cart).reduce(
-        (acc, [name, quantity]) => {
-          const product = state.inventory.find((p) => p.name == name);
-          const price = product ? product.price.USD : 0;
-          return acc + price * quantity;
-        },
-        0
-      );
+      const subtotal = state.cart.reduce((acc, cartItem) => {
+        const product = state.inventory.find((p) => p.name == cartItem.name);
+        const price = product ? parseFloat(product.price) : 0;
+        return acc + price * cartItem.quantity;
+      }, 0);
       const coupon = state.activeCoupon;
       let discount = 0;
       if (coupon.type === 'percentage') {
@@ -133,19 +124,57 @@ export const useEcommerceStore = defineStore('ecommerce', {
     highestPricedItems: (state) => {
       return state.inventory
         .slice()
-        .sort((a, b) => b.price.USD - a.price.USD)
+        .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
         .slice(0, 6);
     },
   },
 
   actions: {
-    initializeStore() {
-      this.loadFromLocalStorage();
-      this.initializeInventory();
+    async fetchProducts() {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch products: ${response.status} ${response.statusText}`
+          );
+        }
+        const products = await response.json();
+        this.inventory = products;
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async initializeStore() {
+      this.cart = [];
+      const savedCart = localStorage.getItem('ecommerce-cart');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          this.cart = parsedCart;
+        } catch (error) {
+          console.error('Error parsing saved cart:', error);
+          this.cart = [];
+        }
+      }
+      await this.fetchProducts();
     },
 
     loadFromLocalStorage() {
       try {
+        this.cart = [];
+        this.pastOrders = [];
+        this.userPreferences = {
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+        };
         const savedCart = localStorage.getItem('ecommerce-cart');
         if (savedCart) {
           this.cart = JSON.parse(savedCart);
@@ -164,7 +193,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
         }
       } catch (error) {
         console.error('Error loading from localStorage:', error);
-        this.cart = {};
+        this.cart = [];
         this.pastOrders = [];
         this.userPreferences = {
           name: '',
@@ -205,15 +234,30 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    addToCart(name, quantity = 1) {
-      if (quantity <= 0) return;
-
-      if (!this.cart[name]) {
-        this.cart[name] = 0;
+    addToCart(productName, quantity) {
+      const existingItem = this.cart.find((item) => item.name === productName);
+      const product = this.inventory.find((p) => p.name === productName);
+      if (!product) {
+        console.error('Product not found:', productName);
+        return false;
       }
-      this.cart[name] += quantity;
-      this.showSidebar = true;
+
+      if (existingItem) {
+        if (existingItem.quantity + quantity > product.stock) {
+          return false;
+        }
+        existingItem.quantity += quantity;
+      } else {
+        {
+          this.cart.push({
+            name: productName,
+            price: product.price,
+            quantity: quantity,
+          });
+        }
+      }
       this.saveCartToLocalStorage();
+      return true;
     },
 
     validateActiveCoupon() {
@@ -229,7 +273,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
     },
 
     removeFromCart(name) {
-      delete this.cart[name];
+      this.cart = this.cart.filter((item) => item.name !== name);
       this.saveCartToLocalStorage();
       this.validateActiveCoupon();
     },
@@ -240,7 +284,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     getProductPrice(name) {
       const product = this.inventory.find((p) => p.name === name);
-      return product ? product.price.USD : 0;
+      return product ? parseFloat(product.price) : 0;
     },
 
     getProductIcon(name) {
@@ -364,7 +408,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
           discount: this.couponDiscount,
         };
         this.pastOrders.push(orderWithCoupon);
-        this.cart = {};
+        this.cart = [];
         this.showSidebar = false;
         this.activeCoupon = null;
         this.couponError = '';
@@ -393,7 +437,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
         localStorage.removeItem('ecommerce-pastOrders');
         localStorage.removeItem('ecommerce-userPreferences');
 
-        this.cart = {};
+        this.cart = [];
         this.pastOrders = [];
         this.userPreferences = {
           name: '',

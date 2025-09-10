@@ -2,7 +2,6 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
-
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -118,6 +117,8 @@ router.post('/login', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         isAdmin: user.isAdmin,
+        phone: user.phone,
+        address: user.address,
       },
       token,
     });

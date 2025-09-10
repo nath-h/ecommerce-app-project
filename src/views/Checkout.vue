@@ -1,6 +1,3 @@
-<!-- TODO:  Needs heavy refactoring
-            Edit to personalize, rewrite entirely. Used AI to get functionality up and would like to rewrite it myself to learn. -->
-
 <template>
   <main class="wrapper">
     <h1>Checkout</h1>
@@ -13,7 +10,6 @@
     </div>
 
     <div v-else>
-      <!-- Order Summary -->
       <div class="checkout-section">
         <h2>Order Summary</h2>
         <table class="checkout-table">
@@ -26,13 +22,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(quantity, name) in store.cart" :key="name">
-              <td>{{ name }}</td>
-              <td>{{ $formatCurrency(store.getProductPrice(name)) }}</td>
-              <td>{{ $formatNumber(quantity) }}</td>
-              <td>
-                {{ $formatCurrency(quantity * store.getProductPrice(name)) }}
-              </td>
+            <tr v-for="item in store.enrichedCartItems" :key="item.name">
+              <td>{{ item.name }}</td>
+              <td>${{ item.price }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.total }}</td>
             </tr>
           </tbody>
           <tfoot>
@@ -71,7 +65,6 @@
           </tfoot>
         </table>
 
-        <!-- Coupon code section -->
         <div class="coupon-section">
           <h3>Have a coupon code?</h3>
           <div class="coupon-input-container">
@@ -107,7 +100,6 @@
         </div>
       </div>
 
-      <!-- Customer Information Form -->
       <div class="checkout-section">
         <h2>Customer Information</h2>
         <form @submit.prevent="submitOrder" class="checkout-form">

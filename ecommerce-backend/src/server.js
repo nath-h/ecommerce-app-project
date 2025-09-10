@@ -18,16 +18,20 @@ app.use((req, res, next) => {
   next();
 });
 const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/products');
 app.use('/api/auth', authRoutes);
-app.get('/api/auth', (req, res) => {
-  console.log(`Backend hit`);
-  res.json({ message: 'Backend API is running!' });
-});
+app.use('/api', productRoutes);
 app.get('/', (req, res) => {
-  console.log(`Backend hit`);
+  console.log(`Root endpoint hit`);
   res.json({ message: 'Backend API is running!' });
 });
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Available endpoints:`);
+  console.log(`- GET /api/products`);
+  console.log(`- POST /api/products`);
+  console.log(`- GET /api/products/:id`);
+  console.log(`- PUT /api/products/:id`);
+  console.log(`- DELETE /api/products/:id`);
 });

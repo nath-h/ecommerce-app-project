@@ -1,6 +1,11 @@
 <template>
   <div class="login-container">
     <div class="login-card">
+      <div v-if="showLogoutMessage" class="logout-success-message">
+        {{ logoutMessage }}
+        <button @click="dismissLogoutMessage" class="dismiss-btn">x</button>
+      </div>
+
       <h2>Log In</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
@@ -31,6 +36,10 @@
           {{ error }}
         </div>
 
+        <div v-if="success" class="success-message">
+          {{ success }}
+        </div>
+
         <button
           type="submit"
           :disabled="loading || !formData.email || !formData.password"
@@ -53,15 +62,23 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 
 export default {
   name: 'LoginPage',
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const authStore = useAuthStore();
+    const showLogoutMessage = ref(false);
+    const logoutMessage = ref('');
+
+    const dismissLogoutMessage = () => {
+      showLogoutMessage.value = false;
+      router.replace({ path: route.path });
+    };
 
     const formData = ref({
       email: '',
@@ -70,10 +87,12 @@ export default {
 
     const loading = ref(false);
     const error = ref('');
+    const success = ref('');
 
     const handleLogin = async () => {
       error.value = '';
       loading.value = true;
+      success.value = '';
 
       try {
         const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -91,6 +110,18 @@ export default {
 
         if (response.ok) {
           authStore.login(data.user, data.token);
+          let countdown = 3;
+          success.value = `Login successful. Redirecting in ${countdown}s...`;
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+              success.value = `Login successful. Redirecting in ${countdown}s...`;
+            } else {
+              success.value = 'Redirecting...';
+              clearInterval(countdownInterval);
+            }
+          }, 1000);
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           router.push('/');
         } else {
           error.value = data.error || 'Login failed';
@@ -103,11 +134,27 @@ export default {
       }
     };
 
+    onMounted(() => {
+      if (route.query.logoutSuccess === 'true') {
+        logoutMessage.value = 'You have successfully logged out!';
+        showLogoutMessage.value = true;
+        setTimeout(() => {
+          if (showLogoutMessage.value) {
+            dismissLogoutMessage();
+          }
+        }, 5000);
+      }
+    });
+
     return {
       formData,
       loading,
       error,
       handleLogin,
+      success,
+      showLogoutMessage,
+      logoutMessage,
+      dismissLogoutMessage,
     };
   },
 };
@@ -120,6 +167,42 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 10px;
+}
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dismiss-btn {
+  background: none;
+  border: none;
+  color: red;
+  font-size: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+}
+
+.dismiss-btn:hover {
+  opacity: 0.7;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .login-card {
@@ -225,9 +308,18 @@ export default {
   text-decoration: underline;
 }
 
-@media (max-width: 600px) {
-  .login-card {
-    padding: 1.5rem;
-  }
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #c3e6cb;
+}
+.logout-success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #c3e6cb;
 }
 </style>
