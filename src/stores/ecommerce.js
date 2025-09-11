@@ -235,31 +235,37 @@ export const useEcommerceStore = defineStore('ecommerce', {
     },
 
     addToCart(productName, quantity) {
-      const existingItem = this.cart.find((item) => item.name === productName);
       const product = this.inventory.find((p) => p.name === productName);
       if (!product) {
         console.error('Product not found:', productName);
         return false;
       }
 
+      if (quantity > product.stock) {
+        console.log(
+          `Insufficient stock. Requested: ${quantity}, Available: ${product.stock}`
+        );
+        return false;
+      }
+
+      const existingItem = this.cart.find((item) => item.name === productName);
+
       if (existingItem) {
-        if (existingItem.quantity + quantity > product.stock) {
-          return false;
-        }
         existingItem.quantity += quantity;
+        product.stock -= quantity;
+        console.log(`Adding ${quantity} to cart. ${product.stock} remaining`);
       } else {
-        {
-          this.cart.push({
-            name: productName,
-            price: product.price,
-            quantity: quantity,
-          });
-        }
+        this.cart.push({
+          name: productName,
+          price: product.price,
+          quantity: quantity,
+        });
+
+        product.stock -= quantity;
       }
       this.saveCartToLocalStorage();
       return true;
     },
-
     validateActiveCoupon() {
       if (!this.activeCoupon) return;
 

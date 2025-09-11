@@ -28,10 +28,4 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Available endpoints:`);
-  console.log(`- GET /api/products`);
-  console.log(`- POST /api/products`);
-  console.log(`- GET /api/products/:id`);
-  console.log(`- PUT /api/products/:id`);
-  console.log(`- DELETE /api/products/:id`);
 });

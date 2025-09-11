@@ -13,7 +13,7 @@
           Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
           Add/disable/edit discount codes (AdminAction AdminActionType CREATED_COUPON )
           Disable user account (AdminAction AdminActionType UPDATED_USER User.isActive = false)
-          Add/remove items from display
+          Add/remove items from display (AdminAction AdminActionType DISABLED/UPDATED_PRODUCT product.isActive = false)
           Add/delete accounts (or disable for data integrity)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products
@@ -31,6 +31,7 @@
 <template>
   <header class="top-bar spread">
     <nav class="top-bar-nav">
+      <TokenExpirationWarning />
       <router-link
         to="/"
         class="top-bar-link"
@@ -126,10 +127,12 @@ import { useRouter } from 'vue-router';
 import { useEcommerceStore } from '@/stores/ecommerce';
 import { useAuthStore } from './stores/authStore';
 import Sidebar from '@/components/Sidebar.vue';
+import TokenExpirationWarning from './components/TokenExpirationWarning.vue';
 
 export default {
   components: {
     Sidebar,
+    TokenExpirationWarning,
   },
   setup() {
     const store = useEcommerceStore();

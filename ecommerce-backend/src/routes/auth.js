@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
         email: newUser.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30s' } //change to 30m
     );
 
     res.status(201).json({
@@ -106,7 +106,7 @@ router.post('/login', async (req, res) => {
         isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30s' } //change to 30m
     );
 
     res.json({
@@ -126,6 +126,59 @@ router.post('/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       error: 'Internal server error during login',
+    });
+  }
+});
+
+router.post('/refresh', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        error: 'Token is required',
+      });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        error: 'User not found or inactive',
+      });
+    }
+    const newToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30s' } //change to 30m
+    );
+    res.json({
+      message: 'Token refreshed successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin,
+        phone: user.phone,
+        address: user.address,
+      },
+      token: newToken,
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        error: 'Token has expired',
+      });
+    }
+    res.status(401).json({
+      error: 'Invalid token',
     });
   }
 });
