@@ -1,12 +1,14 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
-          Checkout.vue needs refactoring/rewriting. Include stock validation vs cart totals.
           User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)        
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
+          Add pagination to ProductSearch (only show 20 items at a time)
+          The above pagination may break ProductSearch so will need to find a workaround as it may only search the 20 currently displayed products
           Cancel/edit orders (if not complete, simulate timeframe)
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
           Guest checkout (should just be able to edit the checkout page)         
           Fake payment integration (stripe test mode?)
+          Eventually, a complete UI overhaul (Vue TransitionGroup conditional rendering animations?)
           
           ADMIN FUNCTIONALITY:
           Admin dashboard(Admin.vue, already have an /admin route)
@@ -19,8 +21,6 @@
           Basic analytics such as sales, popular products
           
           DATABASE FUNCTIONALITY: 
-          Add token time validation (authStore.js?)
-          Individual product pages with description of product
           Add discount per item (search by item name, find by name, apply to id)  
           Order history saved to user account
           Inventory tracking (can't order more than in stock, enforce stock in product)
