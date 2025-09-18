@@ -25,6 +25,9 @@
           />
         </div>
       </div>
+      <router-link to="/products" class="btn btn-primary"
+        >Shop all products</router-link
+      >
     </main>
   </div>
 </template>
@@ -59,3 +62,21 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.btn-primary {
+  background-color: #42b983;
+  color: white;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+</style>

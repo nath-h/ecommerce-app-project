@@ -98,6 +98,7 @@ button,
 [type='reset'],
 [type='submit'] {
   -webkit-appearance: button;
+  appearance: button;
 }
 button::-moz-focus-inner,
 [type='button']::-moz-focus-inner,
@@ -140,6 +141,7 @@ textarea {
 }
 [type='search'] {
   -webkit-appearance: textfield;
+  appearance: textfield;
   outline-offset: -2px;
 }
 [type='search']::-webkit-search-decoration {
@@ -196,12 +198,12 @@ template {
   font-variant: normal;
   font-weight: normal;
   line-height: 1;
-  speak: none;
   text-transform: none;
   white-space: nowrap;
   word-wrap: normal;
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
 }
 .icofont-raddish:before {
   content: '\eb8a';

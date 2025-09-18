@@ -1,3 +1,5 @@
+@use 'foundation' as *;
+
 .spread
     display: flex
     justify-content: space-between
@@ -9,7 +11,8 @@
     font-weight: bold
     vertical-align: middle
     &:active
-        padding: 6px 11px 4px 13px
+        transform: translateY(3px)  
+        box-shadow: inset 5px 20px 40px rgba(0,0,0,0.2)
 
 .btn-dark
     background: $topNavBackground

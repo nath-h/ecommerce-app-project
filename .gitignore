@@ -51,3 +51,4 @@ docker-data/
 src/next.md
 src/food.json
 ecommerce-backend/prisma/seed.js
+serve-build.js

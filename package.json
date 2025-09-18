@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "serve-debug": "node --trace-deprecation ./node_modules/@vue/cli-service.js serve"
   },
   "dependencies": {
     "core-js": "^3.8.3",
@@ -16,8 +17,8 @@
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
-    "sass": "^1.87.0",
-    "sass-loader": "^10.5.2"
+    "sass": "^1.92.1",
+    "sass-loader": "^16.0.5"
   },
   "browserslist": [
     "> 1%",

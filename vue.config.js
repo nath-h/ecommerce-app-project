@@ -2,6 +2,13 @@ const { defineConfig } = require('@vue/cli-service');
 const webpack = require('webpack');
 module.exports = {
   transpileDependencies: true,
+  css: {
+    loaderOptions: {
+      sass: {
+        implementation: require('sass'),
+      },
+    },
+  },
   devServer: {
     proxy: {
       '/api': {

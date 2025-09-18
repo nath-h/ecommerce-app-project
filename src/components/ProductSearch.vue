@@ -8,8 +8,10 @@
       <input
         v-model="searchTerm"
         type="text"
-        placeholder="Search products..."
+        :placeholder="searchPlaceholder"
         class="search-input"
+        id="searchTerm"
+        name="searchTerm"
         @input="handleSearch"
       />
     </div>
@@ -57,8 +59,8 @@ export default {
   computed: {
     searchPlaceholder() {
       return this.searchBy === 'name'
-        ? 'Search products by name'
-        : 'Search products by type';
+        ? 'Search products by name...'
+        : 'Search products by type...';
     },
     filteredProducts() {
       if (!this.searchTerm.trim()) return [];
@@ -86,10 +88,9 @@ export default {
 
 <style scoped>
 .search-dropdown {
-  width: 100%;
-  max-width: 170px;
+  min-width: 170px;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid;
   border-radius: 8px;
   font-size: 16px;
   background-color: slategray;
@@ -102,10 +103,9 @@ export default {
 }
 
 .search-input {
-  width: 100%;
-  max-width: 300px;
+  min-width: 240px;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid;
   border-radius: 8px;
   font-size: 16px;
   background-color: slategrey;
@@ -121,6 +121,14 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
+}
+.search-controls {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
 
 .no-results {

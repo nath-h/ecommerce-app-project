@@ -1,30 +1,31 @@
 /* ITCSS: Settings */
-@import '_root';
-@import '_var.sass';
+@use 'foundation' as *;
+@use '_root';
+@use '_var.sass';
 
 /* ITCSS: Tools */
-@import '_mixins.sass';
+@use '_mixins.sass';
 
 /* ITCSS: Resets */
-//@import '../../node_modules/normalize.css/normalize';
+//@use '../../node_modules/normalize.css/normalize' as *;
 
 /* ITCSS: Fonts */
-@import '_modak.scss';
-@import '_icofont.scss';
+@use '_modak.scss';
+@use '_icofont.scss';
 
 /* ITCSS: Base */
-@import '_global.sass';
-@import '_utility.sass';
+@use '_global.sass';
+@use '_utility.sass';
 
 /* ITCSS: Sections */
-@import '_main.sass';
-@import '_footer.sass';
-@import '_cart.sass';
+@use '_main.sass';
+@use '_footer.sass';
+@use '_cart.sass';
 
 /* ITCSS: Components */
-@import '_card.sass';
-@import '_topNav.sass';
-@import '_splash.sass';
+@use '_card.sass';
+@use '_topNav.sass';
+@use '_splash.sass';
 
 /* ITCSS: Trumps */
-@import '_mediaqueries.sass';
+@use '_mediaqueries.sass';
