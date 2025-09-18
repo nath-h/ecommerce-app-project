@@ -89,7 +89,7 @@ export default {
     const error = ref('');
     const success = ref('');
 
-    const handleLogin = async () => {
+    const handleLogin = async (credentials) => {
       error.value = '';
       loading.value = true;
       success.value = '';
@@ -109,7 +109,7 @@ export default {
         const data = await response.json();
 
         if (response.ok) {
-          authStore.login(data.user, data.token);
+          authStore.setUser(data.user, data.token);
           let countdown = 3;
           success.value = `Login successful. Redirecting in ${countdown}s...`;
           const countdownInterval = setInterval(() => {

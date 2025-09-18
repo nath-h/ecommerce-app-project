@@ -1,0 +1,267 @@
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const router = express.Router();
+const prisma = new PrismaClient();
+
+router.post('/', async (req, res) => {
+  try {
+    const {
+      userId,
+      customerInfo,
+      cartItems,
+      coupon,
+      subtotal,
+      discount,
+      total,
+      notes,
+    } = req.body;
+
+    if (!cartItems || cartItems.length === 0) {
+      return res
+        .status(400)
+        .json({ error: 'Cart items are required. Your cart was empty.' });
+    }
+
+    if (!customerInfo || !customerInfo.name || !customerInfo.email) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
+
+    const parsedSubtotal = parseFloat(subtotal);
+    const parsedDiscount = discount ? parseFloat(discount) : null;
+    const parsedTotal = parseFloat(total);
+
+    const result = await prisma.$transaction(async (tx) => {
+      for (const item of cartItems) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+
+        if (!product.isActive) {
+          throw new Error(`Product is not active: ${product.name}`);
+        }
+
+        if (product.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+          );
+        }
+      }
+
+      const newOrder = await tx.order.create({
+        data: {
+          userId: userId || null,
+          subtotal: parsedSubtotal,
+          discount: parsedDiscount,
+          total: parsedTotal,
+          notes: notes || null,
+          couponCode: coupon?.code || null,
+          couponDiscount: coupon?.discount ? parseFloat(coupon.discount) : null,
+          couponType: coupon?.type || null,
+          couponValue: coupon?.value ? parseFloat(coupon.value) : null,
+          couponDescription: coupon?.description || null,
+        },
+      });
+
+      for (const item of cartItems) {
+        await tx.orderItem.create({
+          data: {
+            orderId: newOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: parseFloat(item.price),
+          },
+        });
+
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      const completeOrder = await tx.order.findUnique({
+        where: { id: newOrder.id },
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          user: true,
+        },
+      });
+      return completeOrder;
+    });
+    res.status(201).json({
+      success: true,
+      order: result,
+      message: 'Order created successfully!',
+    });
+  } catch (error) {
+    console.error('Order creation error:', error);
+    if (
+      error.message.includes('Insufficient stock') ||
+      error.message.includes('Product not found') ||
+      error.message.includes('not active')
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Failed to create order' });
+  }
+});
+
+router.get('/', async (req, res) => {
+  try {
+    const userId = parseInt(req.query.userId);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where: { userId: userId },
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({
+        where: { userId: parseInt(userId) },
+      }),
+    ]);
+    res.json({
+      orders,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.query;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+        user: true,
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (userId && order.userId != parseInt(userId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ error: 'Failed to fetch order' });
+  }
+});
+
+router.put('/:id/cancel', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          orderItems: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      if (userId && order.userId != parseInt(userId)) {
+        throw new Error('Access denied');
+      }
+
+      if (order.status === 'CANCELLED') {
+        throw new Error('Order is already cancelled');
+      }
+
+      if (order.status === 'DELIVERED') {
+        throw new Error(
+          'Cannot cancel orders that have already been delivered'
+        );
+      }
+
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      });
+
+      for (const item of order.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+      return updatedOrder;
+    });
+    res.json({
+      success: true,
+      order: result,
+      message: 'Order cancelled successfully',
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    if (error.message === 'Order not found') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Access denied') {
+      return res.status(403).json({ error: error.message });
+    }
+    if (
+      error.message.includes('Cannot cancel') ||
+      error.message.includes('already cancelled')
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
+module.exports = router;

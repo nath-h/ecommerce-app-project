@@ -22,7 +22,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in store.enrichedCartItems" :key="item.name">
+            <tr v-for="item in store.enrichedCartItems" :key="item.productId">
               <td>
                 <i :class="`icofont-${item.icon} icofont-3x`"></i>
               </td>
@@ -34,7 +34,7 @@
               </td>
               <td class="center">
                 <button
-                  @click="store.removeFromCart(item.name)"
+                  @click="store.removeFromCart(item.productId)"
                   class="btn btn-light cart-remove"
                 >
                   &times;

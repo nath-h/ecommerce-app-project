@@ -76,6 +76,7 @@ router.post('/products', async (req, res) => {
     const { name, description, price, type, icon, stock } = req.body;
     const product = await prisma.product.create({
       data: {
+        id,
         name,
         description,
         price: parseFloat(price),

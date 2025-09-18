@@ -110,7 +110,7 @@ export default {
       successMessage.value = '';
 
       const existingCartItem = store.cart.find(
-        (item) => item.name === props.product.name
+        (item) => item.id === props.product.id
       );
       const currentCartQuantity = existingCartItem
         ? existingCartItem.quantity
@@ -121,7 +121,7 @@ export default {
         `Debug: Stock=${props.product.stock}, InCart=${currentCartQuantity}, Requesting=${quantity.value}`
       );
 
-      if (availableToAdd <= 0) {
+      if (availableToAdd < 0) {
         errorMessage.value = `Cannot add ${quantity.value} items. This item is out of stock.`;
         quantity.value = 0;
         return;
@@ -141,7 +141,7 @@ export default {
         errorMessage.value = 'Please select a quantity greater than 0.';
         return;
       }
-      const success = store.addToCart(props.product.name, quantity.value);
+      const success = store.addToCart(props.product.id, quantity.value);
       if (success) {
         console.log(
           `Successfully added ${quantity.value} item(s) to cart! Stock: ${props.product.stock} Available: ${availableToAdd} `

@@ -205,20 +205,6 @@ export default {
       };
     });
 
-    const enrichedCartItems = computed(() => {
-      return Object.entries(store.cart).map(([name, quantity]) => {
-        const product = store.inventory.find((p) => p.name === name);
-        return {
-          name,
-          quantity,
-          price: product.price.USD,
-          total: quantity * product.price.USD,
-          icon: product.icon,
-          product,
-        };
-      });
-    });
-
     const applyCoupon = () => {
       if (!couponCode.value.trim()) return;
 
@@ -235,14 +221,11 @@ export default {
       try {
         const orderData = store.createOrderData({
           customer: { ...customerInfo.value },
-          cartItems: enrichedCartItems.value,
+          cartItems: store.enrichedCartItems,
         });
-
         await store.completeOrder(orderData);
-        router.push('/past-orders');
       } catch (error) {
         console.error('Order submission failed:', error);
-        alert('There was an error processing your order. Please try again.');
       } finally {
         isSubmitting.value = false;
       }
@@ -252,7 +235,6 @@ export default {
       isSubmitting,
       couponCode,
       customerInfo,
-      enrichedCartItems,
       applyCoupon,
       submitOrder,
     };

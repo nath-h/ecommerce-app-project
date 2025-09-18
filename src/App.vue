@@ -1,5 +1,10 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
+          If an item only has 1 in stock, refreshing the page and resetting stock allows you to add it to cart several times and req 3 when 1 avail   
+          PastOrders is broken because it's still looking for local store data
+          Session expiring soon modal has incorrect session expiration time. Got a warning that said it will expire in 1100s
+          Got another modal after the above that was correct with 300s
+          Tries to extend session and got Token refresh error: TokenExpiredError: jwt expired expiredAt: 2025-09-18T07:29:14.000Z
           User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)        
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
           Add pagination to ProductSearch (only show 20 items at a time)
@@ -122,10 +127,10 @@
 </template>
 
 <script>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 import { useEcommerceStore } from '@/stores/ecommerce';
-import { useAuthStore } from './stores/authStore';
 import Sidebar from '@/components/Sidebar.vue';
 import TokenExpirationWarning from './components/TokenExpirationWarning.vue';
 
@@ -134,19 +139,49 @@ export default {
     Sidebar,
     TokenExpirationWarning,
   },
+
   setup() {
-    const store = useEcommerceStore();
     const authStore = useAuthStore();
+    const store = useEcommerceStore();
     const router = useRouter();
+
+    const setupStoreSync = () => {
+      watch(
+        () => authStore.user,
+        (newUser) => {
+          store.syncWithAuthStore(newUser);
+        },
+        { immediate: true }
+      );
+
+      authStore.$subscribe((mutation, state) => {
+        if (
+          mutation.type === 'patch object' ||
+          mutation.type === 'patch function'
+        ) {
+          if (mutation.payload && 'user' in mutation.payload) {
+            store.syncWithAuthStore(state.user);
+          }
+        }
+      });
+    };
 
     const handleLogout = async () => {
       authStore.logout();
       router.push('/login?logoutSuccess=true');
     };
 
-    onMounted(() => {
-      store.initializeStore();
-      authStore.initializeAuth();
+    onMounted(async () => {
+      try {
+        authStore.initializeAuth();
+        await store.initializeStore();
+        setupStoreSync();
+        if (authStore.user) {
+          store.syncWithAuthStore(authStore.user);
+        }
+      } catch (error) {
+        console.error('Error during store initialization', error);
+      }
     });
 
     return {

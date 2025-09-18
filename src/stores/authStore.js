@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useEcommerceStore } from '@/stores/ecommerce';
 const sessionDuration = 30 * 60 * 1000;
 const warningMessageTimer = 25 * 60 * 1000;
 
@@ -41,6 +42,24 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    setUser(userData, token) {
+      this.user = userData;
+      this.token = token;
+      this.loginTime = Date.now();
+      this.isAuthenticated = true;
+      this.saveAuthToStorage();
+      this.setupTokenExpiration();
+
+      try {
+        const ecommerceStore = useEcommerceStore();
+        ecommerceStore.syncWithAuthStore(
+          userData ? JSON.parse(JSON.stringify(userData)) : null
+        );
+      } catch (error) {
+        console.error('Failed to sync ecommerce store in setUser', error);
+      }
+    },
+
     loadAuthFromStorage() {
       try {
         const token = localStorage.getItem('token');
@@ -54,6 +73,8 @@ export const useAuthStore = defineStore('auth', {
             this.user = JSON.parse(userData);
             this.loginTime = parseInt(loginTime);
             this.isAuthenticated = true;
+            const ecommerceStore = useEcommerceStore();
+            ecommerceStore.syncWithAuthStore(this.user);
           } else {
             this.clearAuthFromStorage();
           }
@@ -76,19 +97,12 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    login(userData, token) {
-      this.user = userData;
-      this.token = token;
-      this.loginTime = Date.now();
-      this.isAuthenticated = true;
-      this.saveAuthToStorage();
-      this.setupTokenExpiration();
-    },
-
     logout() {
       this.clearTimers();
       this.clearAuth();
       this.clearAuthFromStorage();
+      const ecommerceStore = useEcommerceStore();
+      ecommerceStore.syncWithAuthStore(null);
     },
 
     clearAuth() {
@@ -178,7 +192,7 @@ export const useAuthStore = defineStore('auth', {
         const data = await response.json();
 
         if (response.ok) {
-          this.login(data.user, data.token);
+          this.setUser(data.user, data.token);
           return true;
         } else {
           this.logout();

@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { nextTick } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 
 export const useEcommerceStore = defineStore('ecommerce', {
   state: () => ({
@@ -6,53 +8,29 @@ export const useEcommerceStore = defineStore('ecommerce', {
     cart: [],
     loading: false,
     error: null,
-    pastOrders: [],
+    coupons: [],
     userPreferences: {
       name: '',
       email: '',
       phone: '',
       address: '',
     },
+    user: null,
     showSidebar: false,
     activeCoupon: null,
     couponError: '',
-    availableCoupons: [
-      {
-        code: 'SAVE10',
-        type: 'percentage',
-        value: 10,
-        description: '10% off order',
-        minOrder: 0,
-        maxDiscount: null,
-        isActive: true,
-      },
-      {
-        code: 'BIGORDER',
-        type: 'percentage',
-        value: 15,
-        description: '15% off orders over $50. Maximum discount is $500.',
-        minOrder: 50,
-        maxDiscount: 500,
-        isActive: true,
-      },
-      {
-        code: 'EXPIRED',
-        type: 'percentage',
-        value: 20,
-        description: '20% off (expired)',
-        minOrder: 0,
-        maxDiscount: null,
-        isActive: false,
-      },
-    ],
+    stockValidationErrors: [],
   }),
 
   getters: {
     enrichedCartItems: (state) => {
       return state.cart.map((cartItem) => {
-        const product = state.inventory.find((p) => p.name === cartItem.name);
+        const product = state.inventory.find(
+          (p) => p.id === cartItem.productId
+        );
         return {
-          name: cartItem.name,
+          productId: cartItem.productId,
+          name: product ? product.name : 'Unknown',
           quantity: cartItem.quantity,
           price: (product ? parseFloat(product.price) : 0).toFixed(2),
           total: (
@@ -70,7 +48,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     cartSubtotal: (state) => {
       const total = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.name === cartItem.name);
+        const product = state.inventory.find(
+          (p) => p.id === cartItem.productId
+        );
         const price = product ? parseFloat(product.price) : 0;
         return acc + price * cartItem.quantity;
       }, 0);
@@ -79,19 +59,21 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     cartTotal: (state) => {
       const subtotal = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.name === cartItem.name);
+        const product = state.inventory.find(
+          (p) => p.id === cartItem.productId
+        );
         const price = product ? parseFloat(product.price) : 0;
         return acc + price * cartItem.quantity;
       }, 0);
       let discount = 0;
       if (state.activeCoupon) {
         const coupon = state.activeCoupon;
-        if (coupon.type === 'percentage') {
+        if (coupon.type === 'PERCENTAGE') {
           discount = (subtotal * coupon.value) / 100;
           if (coupon.maxDiscount && discount > coupon.maxDiscount) {
             discount = coupon.maxDiscount;
           }
-        } else if (coupon.type === 'fixed') {
+        } else if (coupon.type === 'FIXED') {
           discount = coupon.value;
         }
         discount = Math.min(discount, subtotal);
@@ -104,18 +86,18 @@ export const useEcommerceStore = defineStore('ecommerce', {
       if (!state.activeCoupon) return 0;
 
       const subtotal = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.name == cartItem.name);
+        const product = state.inventory.find((p) => p.id == cartItem.productId);
         const price = product ? parseFloat(product.price) : 0;
         return acc + price * cartItem.quantity;
       }, 0);
       const coupon = state.activeCoupon;
       let discount = 0;
-      if (coupon.type === 'percentage') {
+      if (coupon.type === 'PERCENTAGE') {
         discount = (subtotal * coupon.value) / 100;
         if (coupon.maxDiscount && discount > coupon.maxDiscount) {
           discount = coupon.maxDiscount;
         }
-      } else if (coupon.type === 'fixed') {
+      } else if (coupon.type === 'FIXED') {
         discount = coupon.value;
       }
       return parseFloat(Math.min(discount, subtotal).toFixed(2));
@@ -150,8 +132,104 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
+    async fetchCoupons() {
+      try {
+        const response = await fetch('/api/coupons');
+        if (response.ok) {
+          this.coupons = await response.json();
+        }
+      } catch (error) {
+        console.error('Error fetching coupons:', error);
+      }
+    },
+
+    syncWithAuthStore(authUser) {
+      this.$patch((state) => {
+        state.user = authUser;
+
+        if (authUser) {
+          state.userPreferences = {
+            name: authUser.firstName + ' ' + authUser.lastName,
+            email: authUser.email,
+            phone: authUser.phone || '',
+            address: authUser.address || '',
+          };
+        } else {
+          state.userPreferences = {
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+          };
+        }
+      });
+      console.log('After sync - user:', this.user);
+    },
+
+    async validateCartStock() {
+      this.stockValidationErrors = [];
+      let hasChanges = false;
+
+      try {
+        await this.fetchProducts();
+
+        for (let i = this.cart.length - 1; i >= 0; i--) {
+          const cartItem = this.cart[i];
+          const product = this.inventory.find(
+            (p) => p.id === cartItem.productId
+          );
+
+          if (!product) {
+            this.cart.splice(i, 1);
+            this.stockValidationErrors.push(
+              `${
+                cartItem.name || 'Unknown product'
+              } is no longer available and was removed from your cart.`
+            );
+            hasChanges = true;
+            continue;
+          }
+          if (!product.isActive) {
+            this.cart.splice(i, 1);
+            this.stockValidationErrors.push(
+              `${product.name} is no longer available and was removed from your cart.`
+            );
+            hasChanges = true;
+            continue;
+          }
+
+          if (product.stock < cartItem.quantity) {
+            const oldQuantity = cartItem.quantity;
+            cartItem.quantity = Math.max(0, product.stock);
+
+            if (cartItem.quantity === 0) {
+              this.cart.splice(i, 1);
+              this.stockValidationErrors.push(
+                `${product.name} is out of stock and was removed from your cart.`
+              );
+            } else {
+              this.stockValidationErrors.push(
+                `${product.name} quantity reduced from ${oldQuantity} to ${cartItem.quantity} due to limited stock.`
+              );
+            }
+            hasChanges = true;
+          }
+        }
+
+        if (hasChanges) {
+          this.saveCartToLocalStorage();
+        }
+        return this.stockValidationErrors;
+      } catch (error) {
+        console.error('Error validating cart stock:', error);
+        this.error = 'Failed to validate cart stock';
+        return [];
+      }
+    },
+
     async initializeStore() {
-      this.cart = [];
+      await this.fetchProducts();
+      await this.fetchCoupons();
       const savedCart = localStorage.getItem('ecommerce-cart');
       if (savedCart) {
         try {
@@ -162,13 +240,27 @@ export const useEcommerceStore = defineStore('ecommerce', {
           this.cart = [];
         }
       }
-      await this.fetchProducts();
+      const savedPreferences = localStorage.getItem(
+        'ecommerce-userPreferences'
+      );
+      if (savedPreferences) {
+        try {
+          this.userPreferences = JSON.parse(savedPreferences);
+        } catch (error) {
+          console.error('Error parsing saved preferences:', error);
+          this.userPreferences = {
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+          };
+        }
+      }
     },
 
     loadFromLocalStorage() {
       try {
         this.cart = [];
-        this.pastOrders = [];
         this.userPreferences = {
           name: '',
           email: '',
@@ -180,11 +272,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
           this.cart = JSON.parse(savedCart);
         }
 
-        const savedOrders = localStorage.getItem('ecommerce-pastOrders');
-        if (savedOrders) {
-          this.pastOrders = JSON.parse(savedOrders);
-        }
-
         const savedPreferences = localStorage.getItem(
           'ecommerce-userPreferences'
         );
@@ -194,7 +281,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       } catch (error) {
         console.error('Error loading from localStorage:', error);
         this.cart = [];
-        this.pastOrders = [];
         this.userPreferences = {
           name: '',
           email: '',
@@ -212,17 +298,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    savePastOrdersToLocalStorage() {
-      try {
-        localStorage.setItem(
-          'ecommerce-pastOrders',
-          JSON.stringify(this.pastOrders)
-        );
-      } catch (error) {
-        console.error('Error saving past orders to localStorage:', error);
-      }
-    },
-
+    //maybe integrate this into the database at some point
     saveUserPreferencesToLocalStorage() {
       try {
         localStorage.setItem(
@@ -234,10 +310,10 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    addToCart(productName, quantity) {
-      const product = this.inventory.find((p) => p.name === productName);
+    addToCart(productId, quantity) {
+      const product = this.inventory.find((p) => p.id === productId);
       if (!product) {
-        console.error('Product not found:', productName);
+        console.error('Product not found:', productId);
         return false;
       }
 
@@ -248,7 +324,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
         return false;
       }
 
-      const existingItem = this.cart.find((item) => item.name === productName);
+      const existingItem = this.cart.find(
+        (item) => item.productId === productId
+      );
 
       if (existingItem) {
         existingItem.quantity += quantity;
@@ -256,8 +334,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
         console.log(`Adding ${quantity} to cart. ${product.stock} remaining`);
       } else {
         this.cart.push({
-          name: productName,
-          price: product.price,
+          productId: productId,
           quantity: quantity,
         });
 
@@ -266,6 +343,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.saveCartToLocalStorage();
       return true;
     },
+
     validateActiveCoupon() {
       if (!this.activeCoupon) return;
 
@@ -278,26 +356,21 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    removeFromCart(name) {
-      this.cart = this.cart.filter((item) => item.name !== name);
+    removeFromCart(productId) {
+      this.cart = this.cart.filter((item) => item.productId !== productId);
       this.saveCartToLocalStorage();
       this.validateActiveCoupon();
     },
 
+    //need to implement this clear cart in sidebar
+    clearCart() {
+      this.cart = [];
+      this.saveCartToLocalStorage();
+      (this.activeCoupon = null), (this.couponError = '');
+    },
+
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
-    },
-
-    getProductPrice(name) {
-      const product = this.inventory.find((p) => p.name === name);
-      return product ? parseFloat(product.price) : 0;
-    },
-
-    getProductIcon(name) {
-      const product = this.inventory.find(
-        (p) => p.name.toLowerCase() === name.toLowerCase()
-      );
-      return product ? product.icon : 'spoon-and-fork';
     },
 
     applyCoupon(couponCode) {
@@ -308,30 +381,31 @@ export const useEcommerceStore = defineStore('ecommerce', {
         return false;
       }
 
-      const coupon = this.availableCoupons.find(
-        (c) => c.code.toLowerCase() === couponCode.toLowerCase()
+      const coupon = this.coupons.find(
+        (c) => c.code.toLowerCase() === couponCode.toLowerCase() && c.isActive
       );
 
       if (!coupon) {
         this.couponError = 'Invalid coupon code';
         return false;
       }
-      if (!coupon.isActive) {
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
         this.couponError = 'This coupon has expired';
         return false;
       }
 
       const subtotal = this.cartSubtotal;
-      if (subtotal < coupon.minOrder) {
-        this.couponError = `Minimum order of $${coupon.minOrder.toFixed(
-          2
-        )} required for this coupon`;
+      if (subtotal < parseFloat(coupon.minOrder)) {
+        this.couponError = `Minimum order of $${parseFloat(
+          coupon.minOrder
+        ).toFixed(2)} required for this coupon`;
         return false;
       }
       this.activeCoupon = coupon;
       return true;
     },
 
+    //Might still need to implement this
     removeCoupon() {
       this.activeCoupon = null;
       this.couponError = '';
@@ -341,30 +415,98 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.couponError = '';
     },
 
-    calculateItemDiscount(item, coupon = this.activeCoupon) {
-      if (!coupon) return 0;
+    async createOrder(orderData) {
+      const authStore = useAuthStore();
+      const userId = authStore.user?.id || null;
+      console.log('User object:', this.user);
+      console.log('User ID:', this.user?.id);
+      try {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            customerInfo: orderData.customer,
+            cartItems: this.enrichedCartItems,
+            coupon: this.activeCoupon
+              ? {
+                  code: this.activeCoupon.code,
+                  discount: this.couponDiscount,
+                  description: this.activeCoupon.description,
+                  type: this.activeCoupon.type,
+                  value: this.activeCoupon.value,
+                }
+              : null,
+            subtotal: this.cartSubtotal,
+            discount: this.couponDiscount,
+            total: this.cartTotal,
+            notes: orderData.customer.notes,
+          }),
+        });
 
-      const itemProportion = item.total / this.cartSubtotal;
-      let itemDiscount = 0;
-
-      if (coupon.type === 'percentage') {
-        itemDiscount = this.couponDiscount * itemProportion;
-      } else if (coupon.type === 'fixed') {
-        itemDiscount = this.couponDiscount * itemProportion;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage =
+            errorData.error ||
+            `HTTP ${response.status}: ${response.statusText}`;
+          throw new Error(errorMessage);
+        }
+        const result = await response.json();
+        this.clearCart();
+        return result;
+      } catch (error) {
+        console.error('Error creating order:', error);
+        this.error = error.message;
+        throw error;
       }
-      return Math.min(itemDiscount, item.total);
     },
 
-    generateOrderID() {
-      let id;
-      do {
-        id = `${Math.floor(Math.random() * 1000)
-          .toString()
-          .padStart(3, '0')}-${Math.floor(Math.random() * 1000)
-          .toString()
-          .padStart(3, '0')}`;
-      } while (this.pastOrders.some((order) => order.id === id));
-      return id;
+    async fetchUserOrders(page = 1, limit = 20) {
+      if (!this.user) {
+        throw new Error('User not authenticated');
+      }
+
+      try {
+        const response = await fetch(
+          `/api/orders?userId=${this.user.id}&page=${page}&limit=${limit}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders');
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+    },
+
+    async cancelOrder(orderId) {
+      try {
+        const response = await fetch(`/api/orders/${orderId}/cancel`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: this.user?.id || null,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to cancel order');
+        }
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Error cancelling order:', error);
+        throw error;
+      }
     },
 
     createOrderData({ customer, cartItems }) {
@@ -376,75 +518,34 @@ export const useEcommerceStore = defineStore('ecommerce', {
       };
       this.saveUserPreferencesToLocalStorage();
       return {
-        id: this.generateOrderID(),
-        date: new Date().toISOString(),
         customer,
-        items: cartItems.map((item) => {
-          const itemDiscount = this.calculateItemDiscount(item);
-          const discountedTotal = item.total - itemDiscount;
-
-          return {
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            discountedPrice: discountedTotal / item.quantity,
-            originalTotal: item.total,
-            discountedTotal: parseFloat(discountedTotal.toFixed(2)),
-            icon: item.icon,
-          };
-        }),
-        total: parseFloat(this.cartTotal),
+        items: cartItems,
       };
     },
 
     async completeOrder(orderData) {
       try {
-        const orderWithCoupon = {
-          ...orderData,
-          coupon: this.activeCoupon
-            ? {
-                code: this.activeCoupon.code,
-                discount: this.couponDiscount,
-                description: this.activeCoupon.description,
-                type: this.activeCoupon.type,
-                value: this.activeCoupon.value,
-              }
-            : null,
-          subtotal: this.cartSubtotal,
-          discount: this.couponDiscount,
-        };
-        this.pastOrders.push(orderWithCoupon);
-        this.cart = [];
-        this.showSidebar = false;
-        this.activeCoupon = null;
-        this.couponError = '';
-        this.saveCartToLocalStorage();
-        this.savePastOrdersToLocalStorage();
-        return Promise.resolve();
+        const result = await this.createOrder(orderData);
+        return result;
       } catch (error) {
-        console.error('Error completing order:', error);
-        return Promise.reject(error);
+        throw error;
       }
     },
 
     deleteOrder(orderId) {
       this.pastOrders = this.pastOrders.filter((order) => order.id !== orderId);
-      this.savePastOrdersToLocalStorage();
     },
 
     clearOrders() {
       this.pastOrders = [];
-      this.savePastOrdersToLocalStorage();
     },
 
     clearAllStoredData() {
       try {
         localStorage.removeItem('ecommerce-cart');
-        localStorage.removeItem('ecommerce-pastOrders');
         localStorage.removeItem('ecommerce-userPreferences');
 
         this.cart = [];
-        this.pastOrders = [];
         this.userPreferences = {
           name: '',
           email: '',
