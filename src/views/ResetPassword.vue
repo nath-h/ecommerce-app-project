@@ -6,8 +6,7 @@
         <form
           v-if="step === 1"
           @submit.prevent="handleVerifyIdentity"
-          class="reset-form"
-        >
+          class="reset-form">
           <h3>Verify your identity</h3>
           <p>Enter your email and phone number to verify your account.</p>
           <div class="form-group">
@@ -19,8 +18,7 @@
               required
               :disabled="loading"
               class="form-input"
-              autocomplete="email"
-            />
+              autocomplete="email" />
           </div>
 
           <div class="form-group">
@@ -32,19 +30,19 @@
               required
               :disabled="loading"
               class="form-input"
-              autocomplete="off"
-            />
+              autocomplete="off" />
           </div>
 
-          <div v-if="error" class="error-message">
+          <div
+            v-if="error"
+            class="error-message">
             {{ error }}
           </div>
 
           <button
             type="submit"
             :disabled="loading || !isStep1Valid"
-            class="reset-button"
-          >
+            class="reset-button">
             {{ loading ? 'Verifying...' : 'Verify Identity' }}
           </button>
         </form>
@@ -52,8 +50,7 @@
         <form
           v-if="step === 2"
           @submit.prevent="handleReset"
-          class="reset-form"
-        >
+          class="reset-form">
           <h1>Set New Password</h1>
           <p>Create a new password for your account.</p>
           <div class="form-group">
@@ -65,8 +62,7 @@
               required
               :disabled="loading"
               class="form-input"
-              minlength="6"
-            />
+              minlength="6" />
           </div>
 
           <div class="form-group">
@@ -78,15 +74,18 @@
               required
               :disabled="loading"
               class="form-input"
-              minlength="6"
-            />
+              minlength="6" />
           </div>
 
-          <div v-if="error" class="error-message">
+          <div
+            v-if="error"
+            class="error-message">
             {{ error }}
           </div>
 
-          <div v-if="success" class="success-message">
+          <div
+            v-if="success"
+            class="success-message">
             {{ success }}
           </div>
 
@@ -95,15 +94,13 @@
               type="button"
               @click="goBackToStep1"
               class="back-button"
-              :disabled="loading"
-            >
+              :disabled="loading">
               Back
             </button>
             <button
               type="submit"
               :disabled="loading || !isStep2Valid"
-              class="reset-button"
-            >
+              class="reset-button">
               {{ loading ? 'Resetting password...' : 'Reset Password' }}
             </button>
           </div>
@@ -119,56 +116,54 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+  import { ref, computed } from 'vue';
+  import { useRouter } from 'vue-router';
 
-export default {
-  name: 'ResetPassword',
-  setup() {
-    const router = useRouter();
-    const step = ref(1);
-    const formData = ref({
-      email: '',
-      phone: '',
-      newPassword: '',
-      confirmNewPassword: '',
-    });
+  export default {
+    name: 'ResetPassword',
+    setup() {
+      const router = useRouter();
+      const step = ref(1);
+      const formData = ref({
+        email: '',
+        phone: '',
+        newPassword: '',
+        confirmNewPassword: '',
+      });
 
-    const loading = ref(false);
-    const error = ref('');
-    const success = ref('');
+      const loading = ref(false);
+      const error = ref('');
+      const success = ref('');
 
-    const isStep1Valid = computed(() => {
-      return formData.value.email.trim() && formData.value.phone.trim();
-    });
+      const isStep1Valid = computed(() => {
+        return formData.value.email.trim() && formData.value.phone.trim();
+      });
 
-    const isStep2Valid = computed(() => {
-      return (
-        formData.value.newPassword &&
-        formData.value.confirmNewPassword &&
-        formData.value.newPassword.length >= 6 &&
-        formData.value.confirmNewPassword.length >= 6
-      );
-    });
+      const isStep2Valid = computed(() => {
+        return (
+          formData.value.newPassword &&
+          formData.value.confirmNewPassword &&
+          formData.value.newPassword.length >= 6 &&
+          formData.value.confirmNewPassword.length >= 6
+        );
+      });
 
-    const isFormValid = computed(() => {
-      return (
-        formData.value.email.trim() &&
-        formData.value.phone.trim() &&
-        formData.value.newPassword &&
-        formData.value.confirmNewPassword &&
-        formData.value.newPassword.length >= 6
-      );
-    });
+      const isFormValid = computed(() => {
+        return (
+          formData.value.email.trim() &&
+          formData.value.phone.trim() &&
+          formData.value.newPassword &&
+          formData.value.confirmNewPassword &&
+          formData.value.newPassword.length >= 6
+        );
+      });
 
-    const handleVerifyIdentity = async () => {
-      error.value = '';
-      loading.value = true;
+      const handleVerifyIdentity = async () => {
+        error.value = '';
+        loading.value = true;
 
-      try {
-        const response = await fetch(
-          'http://localhost:5000/api/auth/verify-identity',
-          {
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/verify-identity', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -177,39 +172,36 @@ export default {
               email: formData.value.email.trim().toLowerCase(),
               phone: formData.value.phone.trim(),
             }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            step.value = 2;
+          } else {
+            error.value = data.error || 'Identity Verification Failed';
           }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          step.value = 2;
-        } else {
-          error.value = data.error || 'Identity Verification Failed';
+        } catch (err) {
+          console.error('Identity verification error:', err);
+          error.value = 'Network error. Please try again';
+        } finally {
+          loading.value = false;
         }
-      } catch (err) {
-        console.error('Identity verification error:', err);
-        error.value = 'Network error. Please try again';
-      } finally {
-        loading.value = false;
-      }
-    };
+      };
 
-    const handleReset = async () => {
-      error.value = '';
-      success.value = '';
+      const handleReset = async () => {
+        error.value = '';
+        success.value = '';
 
-      if (formData.value.newPassword !== formData.value.confirmNewPassword) {
-        error.value = 'Passwords do not match';
-        return;
-      }
+        if (formData.value.newPassword !== formData.value.confirmNewPassword) {
+          error.value = 'Passwords do not match';
+          return;
+        }
 
-      loading.value = true;
+        loading.value = true;
 
-      try {
-        const response = await fetch(
-          'http://localhost:5000/api/auth/reset-password',
-          {
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/reset-password', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -218,54 +210,52 @@ export default {
               email: formData.value.email.trim().toLowerCase(),
               newPassword: formData.value.newPassword,
             }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            success.value = 'Password reset successfully! Redirecting to login page...';
+
+            setTimeout(() => {
+              router.push('/login');
+            }, 1500);
+          } else {
+            error.value = data.error || 'Password reset failed';
           }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          success.value =
-            'Password reset successfully! Redirecting to login page...';
-
-          setTimeout(() => {
-            router.push('/login');
-          }, 1500);
-        } else {
-          error.value = data.error || 'Password reset failed';
+        } catch (err) {
+          console.error('Password reset error:', err);
+          error.value = 'Network error. Please try again.';
+        } finally {
+          loading.value = false;
         }
-      } catch (err) {
-        console.error('Password reset error:', err);
-        error.value = 'Network error. Please try again.';
-      } finally {
-        loading.value = false;
-      }
-    };
+      };
 
-    const goBackToStep1 = () => {
-      step.value = 1;
-      error.value = '';
-      success.value = '';
-    };
+      const goBackToStep1 = () => {
+        step.value = 1;
+        error.value = '';
+        success.value = '';
+      };
 
-    return {
-      step,
-      goBackToStep1,
-      formData,
-      loading,
-      error,
-      success,
-      isStep1Valid,
-      isStep2Valid,
-      isFormValid,
-      handleReset,
-      handleVerifyIdentity,
-    };
-  },
-};
+      return {
+        step,
+        goBackToStep1,
+        formData,
+        loading,
+        error,
+        success,
+        isStep1Valid,
+        isStep2Valid,
+        isFormValid,
+        handleReset,
+        handleVerifyIdentity,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.reset-container {
+  .reset-container {
   display: flex;
   align-items: center;
   justify-content: center;

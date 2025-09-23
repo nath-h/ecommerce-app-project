@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { useEcommerceStore } from '@/stores/ecommerce';
+
 const sessionDuration = 30 * 60 * 1000;
 const warningMessageTimer = 25 * 60 * 1000;
 
@@ -11,22 +11,29 @@ export const useAuthStore = defineStore('auth', {
     tokenExpirationTimer: null,
     warningTimer: null,
     loginTime: null,
+    userPreferences: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+    },
   }),
 
   getters: {
-    isLoggedIn: (state) => !!(state.isAuthenticated && state.token),
-    currentUser: (state) => state.user,
-    userFullName: (state) => {
+    isLoggedIn: state => !!(state.isAuthenticated && state.token),
+    currentUser: state => state.user,
+    userId: state => state.user?.id || null,
+    userFullName: state => {
       if (state.user) {
         return `${state.user.firstName} ${state.user.lastName}`.trim();
       }
       return '';
     },
-    isAdmin: (state) => {
+    isAdmin: state => {
       if (!state.user) return false;
       return state.user.isAdmin || false;
     },
-    timeUntilExpiration: (state) => {
+    timeUntilExpiration: state => {
       if (!state.loginTime) return 0;
       const elapsed = Date.now() - state.loginTime;
       const remaining = sessionDuration - elapsed;
@@ -37,6 +44,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     initializeAuth() {
       this.loadAuthFromStorage();
+      this.loadUserPreferencesFromStorage();
       if (this.isAuthenticated) {
         this.setupTokenExpiration();
       }
@@ -49,15 +57,6 @@ export const useAuthStore = defineStore('auth', {
       this.isAuthenticated = true;
       this.saveAuthToStorage();
       this.setupTokenExpiration();
-
-      try {
-        const ecommerceStore = useEcommerceStore();
-        ecommerceStore.syncWithAuthStore(
-          userData ? JSON.parse(JSON.stringify(userData)) : null
-        );
-      } catch (error) {
-        console.error('Failed to sync ecommerce store in setUser', error);
-      }
     },
 
     loadAuthFromStorage() {
@@ -73,8 +72,6 @@ export const useAuthStore = defineStore('auth', {
             this.user = JSON.parse(userData);
             this.loginTime = parseInt(loginTime);
             this.isAuthenticated = true;
-            const ecommerceStore = useEcommerceStore();
-            ecommerceStore.syncWithAuthStore(this.user);
           } else {
             this.clearAuthFromStorage();
           }
@@ -82,6 +79,23 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error loading auth from storage:', error);
         this.clearAuth();
+      }
+    },
+
+    loadUserPreferencesFromStorage() {
+      try {
+        const savedPreferences = localStorage.getItem('auth-userPreferences');
+        if (savedPreferences) {
+          this.userPreferences = JSON.parse(savedPreferences);
+        }
+      } catch (error) {
+        console.error('Error parsing saved preferences:', error);
+        this.userPreferences = {
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+        };
       }
     },
 
@@ -97,12 +111,23 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    saveUserPreferencesToLocalStorage() {
+      try {
+        localStorage.setItem('auth-userPreferences', JSON.stringify(this.userPreferences));
+      } catch (error) {
+        console.error(`Error saving user preferences to local storage:`, error);
+      }
+    },
+
+    updateUserPreferences(preferences) {
+      this.userPreferences = { ...this.userPreferences, ...preferences };
+      this.saveUserPreferencesToLocalStorage();
+    },
+
     logout() {
       this.clearTimers();
       this.clearAuth();
       this.clearAuthFromStorage();
-      const ecommerceStore = useEcommerceStore();
-      ecommerceStore.syncWithAuthStore(null);
     },
 
     clearAuth() {
@@ -110,6 +135,12 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       this.isAuthenticated = false;
       this.loginTime = null;
+      this.userPreferences = {
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+      };
     },
 
     clearAuthFromStorage() {
@@ -119,6 +150,16 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('loginTime');
       } catch (error) {
         console.error('Error clearing auth from storage:', error);
+      }
+    },
+
+    clearAllStoredData() {
+      try {
+        clearAuthFromStorage();
+        localStorage.removeItem('auth-userPreferences');
+        this.clearAuth();
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
       }
     },
 

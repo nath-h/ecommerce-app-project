@@ -4,36 +4,42 @@
       <h1>User Profile</h1>
     </div>
 
-    <div v-if="authStore.isLoggedIn" class="profile-content">
+    <div
+      v-if="isLoggedIn"
+      class="profile-content">
       <div class="profile-info">
         <div class="info-row">
           <label>First Name:</label>
-          <span>{{ authStore.user.firstName }}</span>
+          <span>{{ user.firstName }}</span>
         </div>
 
         <div class="info-row">
           <label>Last Name:</label>
-          <span>{{ authStore.user.lastName }}</span>
+          <span>{{ user.lastName }}</span>
         </div>
 
         <div class="info-row">
           <label>Email:</label>
-          <span>{{ authStore.user.email }}</span>
+          <span>{{ user.email }}</span>
         </div>
 
-        <div v-if="authStore.user.phone" class="info-row">
+        <div
+          v-if="user.phone"
+          class="info-row">
           <label>Phone:</label>
-          <span>{{ authStore.user.phone }}</span>
+          <span>{{ user.phone }}</span>
         </div>
 
         <div class="info-row">
           <label>Account Type:</label>
-          <span>{{ authStore.isAdmin ? 'Administrator' : 'Customer' }}</span>
+          <span>{{ isAdmin ? 'Administrator' : 'Customer' }}</span>
         </div>
 
-        <div v-if="authStore.user.createdAt" class="info-row">
+        <div
+          v-if="user.createdAt"
+          class="info-row">
           <label>Member Since:</label>
-          <span>{{ formatDate(authStore.user.createdAt) }}</span>
+          <span>{{ formatDate(user.createdAt) }}</span>
         </div>
       </div>
 
@@ -43,41 +49,51 @@
       </div>
     </div>
 
-    <div v-else class="not-logged-in">
+    <div
+      v-else
+      class="not-logged-in">
       <p>Please log in to view your profile.</p>
-      <router-link to="/login" class="btn btn-primary">Log In</router-link>
+      <router-link
+        to="/login"
+        class="btn btn-primary">
+        Log In
+      </router-link>
     </div>
   </div>
 </template>
 
 <script>
-import { useAuthStore } from '@/stores/authStore';
+  import { useAuthStore } from '@/stores/authStore';
+  import { storeToRefs } from 'pinia';
 
-export default {
-  name: 'Profile',
-  setup() {
-    const authStore = useAuthStore();
+  export default {
+    name: 'Profile',
+    setup() {
+      const authStore = useAuthStore();
+      const { user, isLoggedIn, isAdmin } = storeToRefs(authStore);
 
-    const formatDate = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    };
+      const formatDate = dateString => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      };
 
-    return {
-      authStore,
-      formatDate,
-    };
-  },
-};
+      return {
+        user,
+        isLoggedIn,
+        isAdmin,
+        formatDate,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.profile-container {
+  .profile-container {
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;

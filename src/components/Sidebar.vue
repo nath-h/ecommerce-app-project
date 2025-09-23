@@ -6,7 +6,11 @@
           Cart
           <i class="icofont-cart-alt icofont-1x"></i>
         </span>
-        <button class="cart-close" @click="store.toggleSidebar">&times;</button>
+        <button
+          class="cart-close"
+          @click="store.toggleSidebar">
+          &times;
+        </button>
       </h1>
 
       <div class="cart-body">
@@ -22,7 +26,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in store.enrichedCartItems" :key="item.productId">
+            <tr
+              v-for="item in store.enrichedCartItems"
+              :key="item.productId">
               <td>
                 <i :class="`icofont-${item.icon} icofont-3x`"></i>
               </td>
@@ -35,8 +41,7 @@
               <td class="center">
                 <button
                   @click="store.removeFromCart(item.productId)"
-                  class="btn btn-light cart-remove"
-                >
+                  class="btn btn-light cart-remove">
                   &times;
                 </button>
               </td>
@@ -44,15 +49,19 @@
           </tbody>
         </table>
 
-        <p class="center" v-if="!store.enrichedCartItems.length">
+        <p
+          class="center"
+          v-if="!store.enrichedCartItems.length">
           <em>No items in cart</em>
         </p>
         <div class="spread">
-          <span
-            ><strong>Total:</strong>
-            {{ $formatCurrency(store.cartTotal) }}</span
-          >
-          <router-link to="/checkout" @click="store.toggleSidebar">
+          <span>
+            <strong>Total:</strong>
+            {{ $formatCurrency(store.cartTotal) }}
+          </span>
+          <router-link
+            to="/checkout"
+            @click="store.toggleSidebar">
             <button class="btn btn-light">Checkout</button>
           </router-link>
         </div>
@@ -62,15 +71,15 @@
 </template>
 
 <script>
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
-export default {
-  setup() {
-    const store = useEcommerceStore();
+  export default {
+    setup() {
+      const store = useEcommerceStore();
 
-    return {
-      store,
-    };
-  },
-};
+      return {
+        store,
+      };
+    },
+  };
 </script>

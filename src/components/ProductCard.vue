@@ -1,12 +1,16 @@
 <template>
   <div class="card">
     <div class="card-title">
-      <router-link :to="`/products/${product.id}`" class="product-title-link">
+      <router-link
+        :to="`/products/${product.id}`"
+        class="product-title-link">
         {{ product.name }}
       </router-link>
     </div>
     <div class="card-body">
-      <router-link :to="`/products/${product.id}`" class="product-icon-link">
+      <router-link
+        :to="`/products/${product.id}`"
+        class="product-icon-link">
         <i :class="`icofont-5x icofont-${product.icon}`"></i>
       </router-link>
       <form>
@@ -34,8 +38,7 @@
               :class="{
                 'low-stock': product.stock > 0 && product.stock <= 5,
                 'out-of-stock': product.stock <= 0,
-              }"
-            >
+              }">
               <span v-if="product.stock <= 0">Out of stock</span>
               <span v-else>{{ product.stock }} available</span>
             </span>
@@ -51,13 +54,18 @@
               v-model.number="quantity"
               min="0"
               :max="product.stock"
-              @input="validateQuantity"
-            />
+              @input="validateQuantity" />
           </div>
         </div>
 
-        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
-        <div v-if="successMessage" class="success-message">
+        <div
+          v-if="errorMessage"
+          class="error-message">
+          {{ errorMessage }}
+        </div>
+        <div
+          v-if="successMessage"
+          class="success-message">
           {{ successMessage }}
         </div>
       </form>
@@ -66,18 +74,18 @@
     <div class="card-footer">
       <router-link
         :to="`/products/${product.id}`"
-        class="btn btn-secondary view-details-btn"
-      >
+        class="btn btn-secondary view-details-btn">
         View Details
       </router-link>
       <button
         @click="handleAddToCart"
         class="btn btn-light"
-        :disabled="
-          quantity <= 0 || quantity > product.stock || product.stock <= 0
-        "
-      >
-        <span v-if="product.stock <= 0" class="out-of-stock">Out of stock</span>
+        :disabled="quantity <= 0 || quantity > product.stock || product.stock <= 0">
+        <span
+          v-if="product.stock <= 0"
+          class="out-of-stock">
+          Out of stock
+        </span>
         <span v-else>Add to cart</span>
       </button>
     </div>
@@ -85,92 +93,88 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import { ref } from 'vue';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
-export default {
-  props: ['product', 'index'],
-  setup(props) {
-    const store = useEcommerceStore();
-    const quantity = ref(0);
-    const errorMessage = ref('');
-    const successMessage = ref('');
-    const validateQuantity = () => {
-      errorMessage.value = '';
-      successMessage.value = '';
-      if (quantity.value > props.product.stock) {
-        quantity.value = props.product.stock;
-      }
-      if (quantity.value < 0) {
-        quantity.value = 0;
-      }
-    };
-    const handleAddToCart = () => {
-      errorMessage.value = '';
-      successMessage.value = '';
-
-      const existingCartItem = store.cart.find(
-        (item) => item.id === props.product.id
-      );
-      const currentCartQuantity = existingCartItem
-        ? existingCartItem.quantity
-        : 0;
-
-      const availableToAdd = props.product.stock - quantity.value;
-      console.log(
-        `Debug: Stock=${props.product.stock}, InCart=${currentCartQuantity}, Requesting=${quantity.value}`
-      );
-
-      if (availableToAdd < 0) {
-        errorMessage.value = `Cannot add ${quantity.value} items. This item is out of stock.`;
-        quantity.value = 0;
-        return;
-      }
-
-      if (props.product.stock <= 0) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`;
-        quantity.value = 0;
-        return;
-      }
-      if (quantity.value > props.product.stock) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${availableToAdd} more in stock. (${currentCartQuantity} already in cart)`;
-        quantity.value = 0;
-        return;
-      }
-      if (quantity.value <= 0) {
-        errorMessage.value = 'Please select a quantity greater than 0.';
-        return;
-      }
-      const success = store.addToCart(props.product.id, quantity.value);
-      if (success) {
-        console.log(
-          `Successfully added ${quantity.value} item(s) to cart! Stock: ${props.product.stock} Available: ${availableToAdd} `
-        );
+  export default {
+    props: ['product', 'index'],
+    setup(props) {
+      const store = useEcommerceStore();
+      const quantity = ref(0);
+      const errorMessage = ref('');
+      const successMessage = ref('');
+      const validateQuantity = () => {
         errorMessage.value = '';
-        successMessage.value = `Successfully added ${quantity.value} item(s) to cart!`;
-        quantity.value = 0;
-        setTimeout(() => {
-          successMessage.value = '';
-        }, 3000);
-      } else {
-        errorMessage.value = 'Unable to add item to cart. Please try again.';
-      }
-    };
+        successMessage.value = '';
+        if (quantity.value > props.product.stock) {
+          quantity.value = props.product.stock;
+        }
+        if (quantity.value < 0) {
+          quantity.value = 0;
+        }
+      };
+      const handleAddToCart = () => {
+        errorMessage.value = '';
+        successMessage.value = '';
 
-    return {
-      store,
-      quantity,
-      validateQuantity,
-      errorMessage,
-      handleAddToCart,
-      successMessage,
-    };
-  },
-};
+        const existingCartItem = store.cart.find(item => item.id === props.product.id);
+        const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0;
+
+        const availableToAdd = props.product.stock - quantity.value;
+        console.log(`Debug: Stock=${props.product.stock}, InCart=${currentCartQuantity}, Requesting=${quantity.value}`);
+
+        if (availableToAdd < 0) {
+          errorMessage.value = `Cannot add ${quantity.value} items. This item is out of stock.`;
+          quantity.value = 0;
+          return;
+        }
+
+        if (props.product.stock <= 0) {
+          errorMessage.value = `Cannot add ${quantity.value} item(s). 
+        This item is out of stock. (${currentCartQuantity} already in cart.)`;
+          quantity.value = 0;
+          return;
+        }
+        if (quantity.value > props.product.stock) {
+          errorMessage.value = `Cannot add ${quantity.value} item(s). 
+        Only ${availableToAdd} more in stock. (${currentCartQuantity} already in cart)`;
+          quantity.value = 0;
+          return;
+        }
+        if (quantity.value <= 0) {
+          errorMessage.value = 'Please select a quantity greater than 0.';
+          return;
+        }
+        const success = store.addToCart(props.product.id, quantity.value);
+        if (success) {
+          console.log(
+            `Successfully added ${quantity.value} item(s) to cart! Stock: ${props.product.stock} Available: ${availableToAdd} `
+          );
+          errorMessage.value = '';
+          successMessage.value = `Successfully added ${quantity.value} item(s) to cart!`;
+          quantity.value = 0;
+          setTimeout(() => {
+            successMessage.value = '';
+          }, 3000);
+        } else {
+          errorMessage.value = 'Unable to add item to cart. Please try again.';
+        }
+      };
+
+      return {
+        store,
+        quantity,
+        validateQuantity,
+        errorMessage,
+        handleAddToCart,
+        successMessage,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.btn:disabled {
+  .btn:disabled {
   opacity: 0.8;
   cursor: not-allowed;
   filter: grayscale(50%);

@@ -5,32 +5,36 @@ const prisma = new PrismaClient();
 
 router.post('/', async (req, res) => {
   try {
-    const {
-      userId,
-      customerInfo,
-      cartItems,
-      coupon,
-      subtotal,
-      discount,
-      total,
-      notes,
-    } = req.body;
+    const { userId, customerInfo, cartItems, coupon, subtotal, discount, total, notes } = req.body;
 
     if (!cartItems || cartItems.length === 0) {
-      return res
-        .status(400)
-        .json({ error: 'Cart items are required. Your cart was empty.' });
+      return res.status(400).json({ error: 'Cart items are required. Your cart was empty.' });
     }
 
-    if (!customerInfo || !customerInfo.name || !customerInfo.email) {
-      return res.status(400).json({ error: 'Name and email are required.' });
+    if (!customerInfo || !customerInfo.name || !customerInfo.email || !customerInfo.address) {
+      return res.status(400).json({ error: 'Name, email, and address are required.' });
+    }
+
+    let validatedUserId = null;
+
+    if (userId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: parseInt(userId) },
+        });
+        if (user) {
+          validatedUserId = parseInt(userId);
+        }
+      } catch (error) {
+        console.warn('Invalid userId provided:', userId);
+      }
     }
 
     const parsedSubtotal = parseFloat(subtotal);
     const parsedDiscount = discount ? parseFloat(discount) : null;
     const parsedTotal = parseFloat(total);
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       for (const item of cartItems) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
@@ -52,7 +56,7 @@ router.post('/', async (req, res) => {
 
       const newOrder = await tx.order.create({
         data: {
-          userId: userId || null,
+          userId: validatedUserId,
           subtotal: parsedSubtotal,
           discount: parsedDiscount,
           total: parsedTotal,
@@ -62,6 +66,10 @@ router.post('/', async (req, res) => {
           couponType: coupon?.type || null,
           couponValue: coupon?.value ? parseFloat(coupon.value) : null,
           couponDescription: coupon?.description || null,
+          customerName: customerInfo.name,
+          customerEmail: customerInfo.email,
+          customerPhone: customerInfo.phone || null,
+          customerAddress: customerInfo.address,
         },
       });
 
@@ -118,24 +126,40 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const userId = parseInt(req.query.userId);
+    const userIdParam = req.query.userId;
+    const customerEmail = req.query.customerEmail;
+    const isAdmin = req.query.isAdmin === 'true';
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
+    let whereClause = {};
+
+    if (isAdmin) {
+      whereClause = {};
+    } else if (userIdParam && !isNaN(parseInt(userIdParam))) {
+      whereClause = { userId: parseInt(userIdParam) };
+    } else if (customerEmail) {
+      whereClause = {
+        customerEmail: customerEmail,
+        userId: null,
+      };
+    } else {
+      return res.status(400).json({
+        error: 'Either userId, customerEmail, or admin access is required.',
+      });
     }
 
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
-        where: { userId: userId },
+        where: whereClause,
         include: {
           orderItems: {
             include: {
               product: true,
             },
           },
+          user: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -144,7 +168,7 @@ router.get('/', async (req, res) => {
         take: limit,
       }),
       prisma.order.count({
-        where: { userId: parseInt(userId) },
+        where: whereClause,
       }),
     ]);
     res.json({
@@ -198,7 +222,7 @@ router.put('/:id/cancel', async (req, res) => {
     const { id } = req.params;
     const { userId } = req.body;
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       const order = await tx.order.findUnique({
         where: { id },
         include: {
@@ -219,9 +243,7 @@ router.put('/:id/cancel', async (req, res) => {
       }
 
       if (order.status === 'DELIVERED') {
-        throw new Error(
-          'Cannot cancel orders that have already been delivered'
-        );
+        throw new Error('Cannot cancel orders that have already been delivered');
       }
 
       const updatedOrder = await tx.order.update({
@@ -254,10 +276,7 @@ router.put('/:id/cancel', async (req, res) => {
     if (error.message === 'Access denied') {
       return res.status(403).json({ error: error.message });
     }
-    if (
-      error.message.includes('Cannot cancel') ||
-      error.message.includes('already cancelled')
-    ) {
+    if (error.message.includes('Cannot cancel') || error.message.includes('already cancelled')) {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to cancel order' });

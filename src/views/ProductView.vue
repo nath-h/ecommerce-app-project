@@ -1,24 +1,32 @@
 <template>
   <main class="wrapper">
-    <div v-if="loading" class="loading">
+    <div
+      v-if="loading"
+      class="loading">
       <p>Loading product...</p>
     </div>
 
-    <div v-else-if="error" class="error">
+    <div
+      v-else-if="error"
+      class="error">
       <h2>Product Not Found</h2>
       <p>{{ error }}</p>
-      <router-link to="/products" class="btn btn-primary">
+      <router-link
+        to="/products"
+        class="btn btn-primary">
         Back to Products
       </router-link>
     </div>
 
-    <div v-else-if="product" class="product-page">
+    <div
+      v-else-if="product"
+      class="product-page">
       <nav class="breadcrumb">
         <router-link to="/">Home</router-link>
         <span class="separator">/</span>
         <router-link to="/products">Products</router-link>
         <span class="separator">/</span>
-        <span class="current"> {{ product.name }}</span>
+        <span class="current">{{ product.name }}</span>
       </nav>
 
       <div class="product-container">
@@ -37,22 +45,22 @@
 
             <div class="info-row">
               <label>Price:</label>
-              <span class="product-price">
-                {{ $formatCurrency(product.price) }}</span
-              >
+              <span class="product-price">{{ $formatCurrency(product.price) }}</span>
             </div>
 
             <div class="info-row">
               <label>Stock:</label>
               <span
                 class="product-stock"
-                :class="{ 'low-stock': product.stock <= 5 }"
-                >{{ product.stock }} available</span
-              >
+                :class="{ 'low-stock': product.stock <= 5 }">
+                {{ product.stock }} available
+              </span>
             </div>
           </div>
 
-          <div v-if="product.description" class="product-description">
+          <div
+            v-if="product.description"
+            class="product-description">
             <h3>Description</h3>
             <p>{{ product.description }}</p>
           </div>
@@ -64,8 +72,7 @@
                 <button
                   @click="decrementQuantity"
                   :disabled="quantity <= 0"
-                  class="quantity-btn"
-                >
+                  class="quantity-btn">
                   -
                 </button>
                 <input
@@ -74,38 +81,39 @@
                   v-model.number="quantity"
                   min="0"
                   :max="product.stock"
-                  class="quantity-input"
-                />
+                  class="quantity-input" />
                 <button
                   @click="incrementQuantity"
                   :disabled="quantity >= product.stock"
-                  class="quantity-btn"
-                >
+                  class="quantity-btn">
                   +
                 </button>
               </div>
             </div>
-            <div v-if="errorMessage" class="error-message">
+            <div
+              v-if="errorMessage"
+              class="error-message">
               {{ errorMessage }}
             </div>
-            <div v-if="successMessage" class="success-message">
+            <div
+              v-if="successMessage"
+              class="success-message">
               {{ successMessage }}
             </div>
 
             <button
               @click="handleAddToCart"
               class="add-to-cart-btn"
-              :disabled="
-                quantity <= 0 || quantity > product.stock || product.stock <= 0
-              "
-            >
+              :disabled="quantity <= 0 || quantity > product.stock || product.stock <= 0">
               <span v-if="product.stock <= 0">Out of stock</span>
               <span v-else>Add to cart</span>
             </button>
           </div>
 
           <div class="navigation-section">
-            <router-link to="/products" class="btn btn-secondary">
+            <router-link
+              to="/products"
+              class="btn btn-secondary">
               Back to products
             </router-link>
           </div>
@@ -116,116 +124,112 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import { ref, onMounted, computed } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
-export default {
-  name: 'ProductView',
-  setup() {
-    const route = useRoute();
-    const store = useEcommerceStore();
+  export default {
+    name: 'ProductView',
+    setup() {
+      const route = useRoute();
+      const store = useEcommerceStore();
 
-    const product = ref(null);
-    const loading = ref(true);
-    const error = ref(null);
-    const quantity = ref(1);
-    const errorMessage = ref('');
-    const successMessage = ref('');
+      const product = ref(null);
+      const loading = ref(true);
+      const error = ref(null);
+      const quantity = ref(1);
+      const errorMessage = ref('');
+      const successMessage = ref('');
 
-    const productId = computed(() => route.params.id);
+      const productId = computed(() => route.params.id);
 
-    const fetchProduct = async () => {
-      try {
-        loading.value = true;
-        error.value = null;
+      const fetchProduct = async () => {
+        try {
+          loading.value = true;
+          error.value = null;
 
-        const response = await fetch(`/api/products/${productId.value}`);
+          const response = await fetch(`/api/products/${productId.value}`);
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Product not found');
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new Error('Product not found');
+            }
+            throw new Error('Failed to fetch product');
           }
-          throw new Error('Failed to fetch product');
+          product.value = await response.json();
+        } catch (err) {
+          console.error('Error fetching product:', err);
+          error.value = err.message;
+        } finally {
+          loading.value = false;
         }
-        product.value = await response.json();
-      } catch (err) {
-        console.error('Error fetching product:', err);
-        error.value = err.message;
-      } finally {
-        loading.value = false;
-      }
-    };
+      };
 
-    const incrementQuantity = () => {
-      if (quantity.value < product.value.stock) {
-        quantity.value++;
-      }
-    };
+      const incrementQuantity = () => {
+        if (quantity.value < product.value.stock) {
+          quantity.value++;
+        }
+      };
 
-    const decrementQuantity = () => {
-      if (quantity.value > 0) {
-        quantity.value--;
-      }
-    };
+      const decrementQuantity = () => {
+        if (quantity.value > 0) {
+          quantity.value--;
+        }
+      };
 
-    const handleAddToCart = () => {
-      errorMessage.value = '';
-      successMessage.value = '';
-
-      const existingCartItem = store.cart.find(
-        (item) => item.name === product.value.name
-      );
-      const currentCartQuantity = existingCartItem
-        ? existingCartItem.quantity
-        : 0;
-      const remainingStock = product.value.stock - currentCartQuantity;
-
-      if (remainingStock === 0) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`;
-        quantity.value = 0;
-        return;
-      } else if (quantity.value > remainingStock) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${remainingStock} more in stock. (${currentCartQuantity} already in cart)`;
-        quantity.value = 0;
-        return;
-      }
-      const success = store.addToCart(product.value.name, quantity.value);
-      if (success) {
-        const addedQuantity = quantity.value;
-        quantity.value = 0;
+      const handleAddToCart = () => {
         errorMessage.value = '';
-        successMessage.value = `Successfully added ${addedQuantity} item(s) to cart!`;
-        setTimeout(() => {
-          successMessage.value = '';
-        }, 3000);
-      } else {
-        errorMessage.value = 'Unable to add item to cart. Please try again.';
-      }
-    };
+        successMessage.value = '';
 
-    onMounted(() => {
-      fetchProduct();
-    });
+        const existingCartItem = store.cart.find(item => item.name === product.value.name);
+        const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0;
+        const remainingStock = product.value.stock - currentCartQuantity;
 
-    return {
-      product,
-      loading,
-      error,
-      quantity,
-      incrementQuantity,
-      decrementQuantity,
-      store,
-      handleAddToCart,
-      errorMessage,
-      successMessage,
-    };
-  },
-};
+        if (remainingStock === 0) {
+          errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`;
+          quantity.value = 0;
+          return;
+        } else if (quantity.value > remainingStock) {
+          errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${remainingStock} more in stock. (${currentCartQuantity} already in cart)`;
+          quantity.value = 0;
+          return;
+        }
+        const success = store.addToCart(product.value.name, quantity.value);
+        if (success) {
+          const addedQuantity = quantity.value;
+          quantity.value = 0;
+          errorMessage.value = '';
+          successMessage.value = `Successfully added ${addedQuantity} item(s) to cart!`;
+          setTimeout(() => {
+            successMessage.value = '';
+          }, 3000);
+        } else {
+          errorMessage.value = 'Unable to add item to cart. Please try again.';
+        }
+      };
+
+      onMounted(() => {
+        fetchProduct();
+      });
+
+      return {
+        product,
+        loading,
+        error,
+        quantity,
+        incrementQuantity,
+        decrementQuantity,
+        store,
+        handleAddToCart,
+        errorMessage,
+        successMessage,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.wrapper {
+  .wrapper {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;

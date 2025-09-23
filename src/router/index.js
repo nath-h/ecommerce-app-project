@@ -8,7 +8,8 @@ import Login from '../views/Login.vue';
 import ResetPassword from '../views/ResetPassword.vue';
 import ProductView from '@/views/ProductView.vue';
 import Profile from '@/views/Profile.vue';
-import Admin from '@/views/Admin.vue';
+import AdminView from '@/views/AdminView.vue';
+import OrderConfirmation from '@/views/OrderConfirmation.vue';
 
 const routes = [
   {
@@ -59,8 +60,18 @@ const routes = [
   },
   {
     path: '/admin',
-    name: 'Admin',
-    component: Admin,
+    name: 'AdminView',
+    component: AdminView,
+  },
+  {
+    path: '/order-confirmation/:id',
+    name: 'OrderConfirmation',
+    component: OrderConfirmation,
+    props: true,
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
   },
 ];
 

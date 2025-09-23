@@ -17,11 +17,14 @@ app.use((req, res, next) => {
   console.log(`Backend hit - ${req.method} ${req.path}`);
   next();
 });
-const authRoutes = require('./routes/auth');
+const { router: authRouter } = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const ordersRoutes = require('./routes/orders');
+const adminRoutes = require('./routes/admin');
+
+app.use('/api/admin', adminRoutes);
 app.use('/api/orders', ordersRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRouter);
 app.use('/api', productRoutes);
 app.get('/', (req, res) => {
   console.log(`Root endpoint hit`);

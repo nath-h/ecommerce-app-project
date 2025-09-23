@@ -3,7 +3,9 @@
     <div class="register-container">
       <div class="register-card">
         <h2>Create Account</h2>
-        <form @submit.prevent="handleRegister" class="register-form">
+        <form
+          @submit.prevent="handleRegister"
+          class="register-form">
           <div class="form-group">
             <label for="firstName">First Name</label>
             <input
@@ -12,8 +14,7 @@
               type="text"
               required
               :disabled="loading"
-              class="form-input"
-            />
+              class="form-input" />
           </div>
 
           <div class="form-group">
@@ -24,8 +25,7 @@
               type="text"
               required
               :disabled="loading"
-              class="form-input"
-            />
+              class="form-input" />
           </div>
 
           <div class="form-group">
@@ -36,8 +36,7 @@
               type="email"
               required
               :disabled="loading"
-              class="form-input"
-            />
+              class="form-input" />
           </div>
 
           <div class="form-group">
@@ -48,8 +47,7 @@
               type="tel"
               required
               :disabled="loading"
-              class="form-input"
-            />
+              class="form-input" />
           </div>
 
           <div class="form-group">
@@ -60,8 +58,7 @@
               required
               :disabled="loading"
               class="form-input"
-              rows="3"
-            />
+              rows="3" />
           </div>
 
           <div class="form-group">
@@ -73,8 +70,7 @@
               required
               :disabled="loading"
               class="form-input"
-              minLength="6"
-            />
+              minLength="6" />
           </div>
 
           <div class="form-group">
@@ -86,23 +82,25 @@
               required
               :disabled="loading"
               class="form-input"
-              minLength="6"
-            />
+              minLength="6" />
           </div>
 
-          <div v-if="error" class="error-message">
+          <div
+            v-if="error"
+            class="error-message">
             {{ error }}
           </div>
 
-          <div v-if="success" class="success-message">
+          <div
+            v-if="success"
+            class="success-message">
             {{ success }}
           </div>
 
           <button
             type="submit"
             :disabled="loading || !isFormValid"
-            class="register-button"
-          >
+            class="register-button">
             {{ loading ? 'Creating Account' : 'Register' }}
           </button>
         </form>
@@ -117,57 +115,57 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+  import { ref, computed } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
 
-export default {
-  name: 'RegisterPage',
-  setup() {
-    const router = useRouter();
+  export default {
+    name: 'RegisterPage',
+    setup() {
+      const router = useRouter();
+      const authStore = useAuthStore();
 
-    const formData = ref({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      address: '',
-      password: '',
-      confirmPassword: '',
-    });
+      const formData = ref({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        password: '',
+        confirmPassword: '',
+      });
 
-    const loading = ref(false);
-    const error = ref('');
-    const success = ref('');
+      const loading = ref(false);
+      const error = ref('');
+      const success = ref('');
 
-    const isFormValid = computed(() => {
-      return (
-        formData.value.firstName.trim() &&
-        formData.value.lastName.trim() &&
-        formData.value.email.trim() &&
-        formData.value.phone.trim() &&
-        formData.value.address.trim() &&
-        formData.value.password &&
-        formData.value.confirmPassword &&
-        formData.value.password === formData.value.confirmPassword &&
-        formData.value.password.length >= 6
-      );
-    });
+      const isFormValid = computed(() => {
+        return (
+          formData.value.firstName.trim() &&
+          formData.value.lastName.trim() &&
+          formData.value.email.trim() &&
+          formData.value.phone.trim() &&
+          formData.value.address.trim() &&
+          formData.value.password &&
+          formData.value.confirmPassword &&
+          formData.value.password === formData.value.confirmPassword &&
+          formData.value.password.length >= 6
+        );
+      });
 
-    const handleRegister = async () => {
-      error.value = '';
-      success.value = '';
+      const handleRegister = async () => {
+        error.value = '';
+        success.value = '';
 
-      if (formData.value.password !== formData.value.confirmPassword) {
-        error.value = 'Passwords do not match';
-        return;
-      }
+        if (formData.value.password !== formData.value.confirmPassword) {
+          error.value = 'Passwords do not match';
+          return;
+        }
 
-      loading.value = true;
+        loading.value = true;
 
-      try {
-        const response = await fetch(
-          'http://localhost:5000/api/auth/register',
-          {
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -180,51 +178,48 @@ export default {
               address: formData.value.address.trim(),
               password: formData.value.password,
             }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            authStore.setUser(data.user, data.token);
+            success.value = 'Account created successfully! Redirecting...';
+
+            setTimeout(() => {
+              router.push('/');
+            }, 1500);
+          } else {
+            error.value = data.error || 'Registration failed';
           }
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-
-          success.value = 'Account created successfully! Redirecting...';
-
-          setTimeout(() => {
-            router.push('/');
-          }, 1500);
-        } else {
-          error.value = data.error || 'Registration failed';
+        } catch (err) {
+          console.error('Registration error:', err);
+          if (err.message.includes('Backend server')) {
+            error.value = 'Backend server is not running';
+          } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
+            error.value = 'Unable to connect to server.';
+          } else {
+            error.value = 'Network error. Please try again.';
+          }
+        } finally {
+          loading.value = false;
         }
-      } catch (err) {
-        console.error('Registration error:', err);
-        if (err.message.includes('Backend server')) {
-          error.value = 'Backend server is not running';
-        } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
-          error.value = 'Unable to connect to server.';
-        } else {
-          error.value = 'Network error. Please try again.';
-        }
-      } finally {
-        loading.value = false;
-      }
-    };
+      };
 
-    return {
-      formData,
-      loading,
-      error,
-      success,
-      isFormValid,
-      handleRegister,
-    };
-  },
-};
+      return {
+        formData,
+        loading,
+        error,
+        success,
+        isFormValid,
+        handleRegister,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.register-container {
+  .register-container {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,6 +261,7 @@ export default {
 .form-input {
   padding: 0.75rem;
   border: 1px solid #ddd;
+  background-color: lightcyan;
   border-radius: 5px;
   font-size: 1rem;
   transition: border-color 0.3s;

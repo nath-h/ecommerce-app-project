@@ -6,7 +6,7 @@ import './assets/styles/style.scss';
 
 const app = createApp(App);
 
-app.config.globalProperties.$formatCurrency = (amount) => {
+app.config.globalProperties.$formatCurrency = amount => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -15,7 +15,7 @@ app.config.globalProperties.$formatCurrency = (amount) => {
   }).format(amount);
 };
 
-app.config.globalProperties.$formatNumber = (number) => {
+app.config.globalProperties.$formatNumber = number => {
   return new Intl.NumberFormat('en-US').format(number);
 };
 

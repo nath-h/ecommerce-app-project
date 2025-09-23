@@ -13,7 +13,7 @@ router.get('/products', async (req, res) => {
         createdAt: 'desc',
       },
     });
-    const formattedProducts = products.map((product) => ({
+    const formattedProducts = products.map(product => ({
       ...product,
       price: product.price.toString(),
     }));

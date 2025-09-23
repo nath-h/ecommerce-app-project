@@ -1,13 +1,21 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <div v-if="showLogoutMessage" class="logout-success-message">
+      <div
+        v-if="showLogoutMessage"
+        class="logout-success-message">
         {{ logoutMessage }}
-        <button @click="dismissLogoutMessage" class="dismiss-btn">x</button>
+        <button
+          @click="dismissLogoutMessage"
+          class="dismiss-btn">
+          x
+        </button>
       </div>
 
       <h2>Log In</h2>
-      <form @submit.prevent="handleLogin" class="login-form">
+      <form
+        @submit.prevent="handleLogin"
+        class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
           <input
@@ -16,8 +24,7 @@
             type="email"
             required
             :disabled="loading"
-            class="form-input"
-          />
+            class="form-input" />
         </div>
 
         <div class="form-group">
@@ -28,23 +35,25 @@
             type="password"
             required
             :disabled="loading"
-            class="form-input"
-          />
+            class="form-input" />
         </div>
 
-        <div v-if="error" class="error-message">
+        <div
+          v-if="error"
+          class="error-message">
           {{ error }}
         </div>
 
-        <div v-if="success" class="success-message">
+        <div
+          v-if="success"
+          class="success-message">
           {{ success }}
         </div>
 
         <button
           type="submit"
           :disabled="loading || !formData.email || !formData.password"
-          class="login-button"
-        >
+          class="login-button">
           {{ loading ? 'Logging in...' : 'Login' }}
         </button>
       </form>
@@ -62,106 +71,106 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore';
+  import { ref, onMounted } from 'vue';
+  import { useRouter, useRoute } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
 
-export default {
-  name: 'LoginPage',
-  setup() {
-    const router = useRouter();
-    const route = useRoute();
-    const authStore = useAuthStore();
-    const showLogoutMessage = ref(false);
-    const logoutMessage = ref('');
+  export default {
+    name: 'LoginPage',
+    setup() {
+      const router = useRouter();
+      const route = useRoute();
+      const authStore = useAuthStore();
+      const showLogoutMessage = ref(false);
+      const logoutMessage = ref('');
 
-    const dismissLogoutMessage = () => {
-      showLogoutMessage.value = false;
-      router.replace({ path: route.path });
-    };
+      const dismissLogoutMessage = () => {
+        showLogoutMessage.value = false;
+        router.replace({ path: route.path });
+      };
 
-    const formData = ref({
-      email: '',
-      password: '',
-    });
+      const formData = ref({
+        email: '',
+        password: '',
+      });
 
-    const loading = ref(false);
-    const error = ref('');
-    const success = ref('');
+      const loading = ref(false);
+      const error = ref('');
+      const success = ref('');
 
-    const handleLogin = async (credentials) => {
-      error.value = '';
-      loading.value = true;
-      success.value = '';
+      const handleLogin = async credentials => {
+        error.value = '';
+        loading.value = true;
+        success.value = '';
 
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.value.email.trim().toLowerCase(),
-            password: formData.value.password,
-          }),
-        });
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: formData.value.email.trim().toLowerCase(),
+              password: formData.value.password,
+            }),
+          });
 
-        const data = await response.json();
+          const data = await response.json();
 
-        if (response.ok) {
-          authStore.setUser(data.user, data.token);
-          let countdown = 3;
-          success.value = `Login successful. Redirecting in ${countdown}s...`;
-          const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdown > 0) {
-              success.value = `Login successful. Redirecting in ${countdown}s...`;
-            } else {
-              success.value = 'Redirecting...';
-              clearInterval(countdownInterval);
-            }
-          }, 1000);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-          router.push('/');
-        } else {
-          error.value = data.error || 'Login failed';
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        error.value = 'Network error. Please check if the server is running.';
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    onMounted(() => {
-      if (route.query.logoutSuccess === 'true') {
-        logoutMessage.value = 'You have successfully logged out!';
-        showLogoutMessage.value = true;
-        setTimeout(() => {
-          if (showLogoutMessage.value) {
-            dismissLogoutMessage();
+          if (response.ok) {
+            authStore.setUser(data.user, data.token);
+            let countdown = 3;
+            success.value = `Login successful. Redirecting in ${countdown}s...`;
+            const countdownInterval = setInterval(() => {
+              countdown--;
+              if (countdown > 0) {
+                success.value = `Login successful. Redirecting in ${countdown}s...`;
+              } else {
+                success.value = 'Redirecting...';
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            router.push('/');
+          } else {
+            error.value = data.error || 'Login failed';
           }
-        }, 5000);
-      }
-    });
+        } catch (err) {
+          console.error('Login error:', err);
+          error.value = 'Network error. Please check if the server is running.';
+        } finally {
+          loading.value = false;
+        }
+      };
 
-    return {
-      formData,
-      loading,
-      error,
-      handleLogin,
-      success,
-      showLogoutMessage,
-      logoutMessage,
-      dismissLogoutMessage,
-    };
-  },
-};
+      onMounted(() => {
+        if (route.query.logoutSuccess === 'true') {
+          logoutMessage.value = 'You have successfully logged out!';
+          showLogoutMessage.value = true;
+          setTimeout(() => {
+            if (showLogoutMessage.value) {
+              dismissLogoutMessage();
+            }
+          }, 5000);
+        }
+      });
+
+      return {
+        formData,
+        loading,
+        error,
+        handleLogin,
+        success,
+        showLogoutMessage,
+        logoutMessage,
+        dismissLogoutMessage,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.login-container {
+  .login-container {
   min-height: 50vh;
   display: flex;
   align-items: center;

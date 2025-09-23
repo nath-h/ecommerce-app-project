@@ -9,8 +9,7 @@
     <main class="wrapper">
       <ProductSearch
         :products="store.inventory"
-        @search-active="handleSearchActive"
-      />
+        @search-active="handleSearchActive" />
 
       <div v-if="!isSearching">
         <h1>Recommended</h1>
@@ -21,50 +20,51 @@
             :key="product.id"
             class="card"
             :index="index"
-            :product="product"
-          />
+            :product="product" />
         </div>
       </div>
-      <router-link to="/products" class="btn btn-primary"
-        >Shop all products</router-link
-      >
+      <router-link
+        to="/products"
+        class="btn btn-primary">
+        Shop all products
+      </router-link>
     </main>
   </div>
 </template>
 
 <script>
-import ProductCard from '@/components/ProductCard.vue';
-import ProductSearch from '@/components/ProductSearch.vue';
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import ProductCard from '@/components/ProductCard.vue';
+  import ProductSearch from '@/components/ProductSearch.vue';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
-export default {
-  name: 'Home',
-  components: {
-    ProductCard,
-    ProductSearch,
-  },
-  setup() {
-    const store = useEcommerceStore();
-
-    return {
-      store,
-    };
-  },
-  data() {
-    return {
-      isSearching: false,
-    };
-  },
-  methods: {
-    handleSearchActive(isActive) {
-      this.isSearching = isActive;
+  export default {
+    name: 'Home',
+    components: {
+      ProductCard,
+      ProductSearch,
     },
-  },
-};
+    setup() {
+      const store = useEcommerceStore();
+
+      return {
+        store,
+      };
+    },
+    data() {
+      return {
+        isSearching: false,
+      };
+    },
+    methods: {
+      handleSearchActive(isActive) {
+        this.isSearching = isActive;
+      },
+    },
+  };
 </script>
 
 <style scoped>
-.btn-primary {
+  .btn-primary {
   background-color: #42b983;
   color: white;
 }

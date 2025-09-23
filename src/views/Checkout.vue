@@ -2,14 +2,38 @@
   <main class="wrapper">
     <h1>Checkout</h1>
 
-    <div v-if="Object.keys(store.cart).length === 0" class="empty-cart">
+    <div
+      v-if="Object.keys(cart).length === 0"
+      class="empty-cart">
       <p>Your cart is empty!</p>
-      <router-link to="/products" class="btn btn-primary"
-        >Go Shopping</router-link
-      >
+      <router-link
+        to="/products"
+        class="btn btn-primary">
+        Go Shopping
+      </router-link>
     </div>
 
     <div v-else>
+      <div
+        v-if="!authStore.user"
+        class="guest-notice">
+        <p>You are checking out as a guest.</p>
+        <p>
+          <router-link
+            to="/login"
+            class="login-link">
+            Login
+          </router-link>
+          or
+          <router-link
+            to="/register"
+            class="register-link">
+            Register
+          </router-link>
+          to save your preferences and view order history.
+        </p>
+      </div>
+
       <div class="checkout-section">
         <h2>Order Summary</h2>
         <table class="checkout-table">
@@ -22,7 +46,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in store.enrichedCartItems" :key="item.name">
+            <tr
+              v-for="item in enrichedCartItems"
+              :key="item.productId">
               <td>{{ item.name }}</td>
               <td>${{ item.price }}</td>
               <td>{{ item.quantity }}</td>
@@ -33,33 +59,35 @@
             <tr>
               <td colspan="3"><strong>Subtotal:</strong></td>
               <td>
-                <strong>{{ $formatCurrency(store.cartSubtotal) }}</strong>
+                <strong>{{ $formatCurrency(cartSubtotal) }}</strong>
               </td>
             </tr>
-            <tr v-if="store.activeCoupon" class="coupon-row">
+            <tr
+              v-if="activeCoupon"
+              class="coupon-row">
               <td colspan="3">
                 <div class="coupon-applied">
-                  <strong>Coupon applied:</strong> {{ store.activeCoupon.code }}
+                  <strong>Coupon applied:</strong>
+                  {{ activeCoupon.code }}
                   <button
-                    @click="store.removeCoupon()"
+                    @click="ecommerceStore.removeCoupon()"
                     class="btn-remove-coupon"
-                    title="Remove coupon"
-                  >
+                    title="Remove coupon">
                     &times;
                   </button>
                 </div>
                 <div class="coupon-description">
-                  {{ store.activeCoupon.description }}
+                  {{ activeCoupon.description }}
                 </div>
               </td>
               <td class="discount-amount">
-                <strong>-{{ $formatCurrency(store.couponDiscount) }}</strong>
+                <strong>-{{ $formatCurrency(couponDiscount) }}</strong>
               </td>
             </tr>
             <tr class="total-row">
               <td colspan="3"><strong>Total:</strong></td>
               <td>
-                <strong>{{ $formatCurrency(store.cartTotal) }}</strong>
+                <strong>{{ $formatCurrency(cartTotal) }}</strong>
               </td>
             </tr>
           </tfoot>
@@ -73,36 +101,37 @@
               v-model="couponCode"
               placeholder="Enter coupon code"
               class="coupon-input"
-              :class="{ error: store.couponError }"
-              @input="store.clearCouponError()"
-              @keyup.enter="applyCoupon"
-            />
+              :class="{ error: couponError }"
+              @input="ecommerceStore.clearCouponError()"
+              @keyup.enter="applyCoupon" />
             <button
               @click="applyCoupon"
               class="btn btn-secondary"
-              :disabled="
-                !couponCode.trim() || (store.activeCoupon && !store.couponError)
-              "
-            >
+              :disabled="!couponCode.trim() || (activeCoupon && !couponError)">
               Apply
             </button>
           </div>
-          <div v-if="store.couponError" class="error-message">
-            {{ store.couponError }}
+          <div
+            v-if="couponError"
+            class="error-message">
+            {{ couponError }}
           </div>
           <div
-            v-if="store.activeCoupon && !store.couponError"
-            class="success-message"
-          >
+            v-if="activeCoupon && !couponError"
+            class="success-message">
             Coupon applied successfully! You saved
-            {{ $formatCurrency(store.couponDiscount) }}
+            {{ $formatCurrency(couponDiscount) }}
           </div>
         </div>
       </div>
 
       <div class="checkout-section">
-        <h2>Customer Information</h2>
-        <form @submit.prevent="submitOrder" class="checkout-form">
+        <h2>
+          {{ authStore.user ? 'Customer Information' : 'Your information' }}
+        </h2>
+        <form
+          @submit.prevent="submitOrder"
+          class="checkout-form">
           <div class="form-group">
             <label for="name">Full Name *</label>
             <input
@@ -111,7 +140,7 @@
               v-model="customerInfo.name"
               required
               class="form-input"
-            />
+              :placeholder="authStore.user ? '' : 'Enter your full name'" />
           </div>
 
           <div class="form-group">
@@ -122,7 +151,7 @@
               v-model="customerInfo.email"
               required
               class="form-input"
-            />
+              :placeholder="authStore.user ? '' : 'Enter your email address'" />
           </div>
 
           <div class="form-group">
@@ -132,7 +161,9 @@
               id="phone"
               v-model="customerInfo.phone"
               class="form-input"
-            />
+              :placeholder="authStore.user ? '' : 'Enter your phone number'"
+              @input="formatPhoneInput"
+              maxlength="14" />
           </div>
 
           <div class="form-group">
@@ -143,7 +174,7 @@
               required
               class="form-input"
               rows="3"
-            ></textarea>
+              :placeholder="authStore.user ? '' : 'Enter your delivery address'"></textarea>
           </div>
 
           <div class="form-group">
@@ -153,18 +184,19 @@
               v-model="customerInfo.notes"
               class="form-input"
               rows="2"
-            ></textarea>
+              placeholder="Any special delivery instructions? (Optional)"></textarea>
           </div>
 
           <div class="checkout-actions">
-            <router-link to="/" class="btn btn-secondary"
-              >Continue Shopping</router-link
-            >
+            <router-link
+              to="/"
+              class="btn btn-secondary">
+              Continue Shopping
+            </router-link>
             <button
               type="submit"
               class="btn btn-primary"
-              :disabled="isSubmitting"
-            >
+              :disabled="isSubmitting">
               {{ isSubmitting ? 'Processing...' : 'Place Order' }}
             </button>
           </div>
@@ -175,74 +207,148 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { storeToRefs } from 'pinia';
+  import { useEcommerceStore } from '@/stores/ecommerce';
+  import { useAuthStore } from '@/stores/authStore';
 
-export default {
-  name: 'Checkout',
-  setup() {
-    const store = useEcommerceStore();
-    const router = useRouter();
+  export default {
+    name: 'Checkout',
+    setup() {
+      const ecommerceStore = useEcommerceStore();
+      const authStore = useAuthStore();
+      const router = useRouter();
 
-    const isSubmitting = ref(false);
-    const couponCode = ref('');
-    const customerInfo = ref({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      notes: '',
-    });
+      const { cart, cartSubtotal, enrichedCartItems, cartTotal, activeCoupon, couponDiscount, couponError } =
+        storeToRefs(ecommerceStore);
 
-    onMounted(() => {
-      customerInfo.value = {
-        name: store.userPreferences.name || '',
-        email: store.userPreferences.email || '',
-        phone: store.userPreferences.phone || '',
-        address: store.userPreferences.address || '',
+      const { userPreferences } = storeToRefs(authStore);
+
+      const isSubmitting = ref(false);
+      const couponCode = ref('');
+      const customerInfo = ref({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
         notes: '',
+      });
+
+      onMounted(() => {
+        if (authStore.user && userPreferences.value) {
+          customerInfo.value = {
+            name: userPreferences.value.name || '',
+            email: userPreferences.value.email || '',
+            phone: userPreferences.value.phone || '',
+            address: userPreferences.value.address || '',
+            notes: '',
+          };
+        } else {
+          customerInfo.value = {
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+            notes: '',
+          };
+        }
+      });
+      const formatPhoneInput = event => {
+        let value = event.target.value.replace(/[^0-9]/g, '');
+
+        value = value.substring(0, 10);
+
+        if (value.length >= 6) {
+          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+        } else if (value.length >= 3) {
+          value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+        }
+
+        customerInfo.value.phone = value;
       };
-    });
 
-    const applyCoupon = () => {
-      if (!couponCode.value.trim()) return;
+      const applyCoupon = () => {
+        if (!couponCode.value.trim()) return;
 
-      if (store.applyCoupon(couponCode.value)) {
-        couponCode.value = couponCode.value.toUpperCase();
-      } else {
-        couponCode.value = '';
-      }
-    };
+        if (ecommerceStore.applyCoupon(couponCode.value)) {
+          couponCode.value = couponCode.value.toUpperCase();
+        } else {
+          couponCode.value = '';
+        }
+      };
 
-    const submitOrder = async () => {
-      isSubmitting.value = true;
+      const submitOrder = async () => {
+        isSubmitting.value = true;
 
-      try {
-        const orderData = store.createOrderData({
-          customer: { ...customerInfo.value },
-          cartItems: store.enrichedCartItems,
-        });
-        await store.completeOrder(orderData);
-      } catch (error) {
-        console.error('Order submission failed:', error);
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-    return {
-      store,
-      isSubmitting,
-      couponCode,
-      customerInfo,
-      applyCoupon,
-      submitOrder,
-    };
-  },
-};
+        try {
+          const orderData = ecommerceStore.createOrderData({
+            customer: { ...customerInfo.value },
+            cartItems: enrichedCartItems.value,
+          });
+          const result = await ecommerceStore.completeOrder(orderData);
+          if (result.success) {
+            router.push(`/order-confirmation/${result.order.id}`);
+          }
+        } catch (error) {
+          console.error('Order submission failed:', error);
+        } finally {
+          isSubmitting.value = false;
+        }
+      };
+
+      return {
+        ecommerceStore,
+        authStore,
+        cart,
+        cartTotal,
+        cartSubtotal,
+        enrichedCartItems,
+        activeCoupon,
+        couponDiscount,
+        couponError,
+        userPreferences,
+        isSubmitting,
+        couponCode,
+        customerInfo,
+        applyCoupon,
+        submitOrder,
+        formatPhoneInput,
+      };
+    },
+  };
 </script>
 
 <style scoped>
+  .guest-notice {
+  background-color: #79a206;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.guest-notice p {
+  color: white;
+  opacity: 90%;
+  text-align: center;
+  margin: 0;
+  font-weight: bold;
+}
+
+.login-link,
+.register-link {
+  color: #0e4379;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-link:hover,
+.register-link:hover {
+  text-decoration: underline;
+}
+
 .checkout-section {
   margin-bottom: 30px;
   padding: 20px;

@@ -1,34 +1,45 @@
 <template>
-  <div v-if="showWarning" class="warning-overlay">
+  <div
+    v-if="showWarning"
+    class="warning-overlay">
     <div class="warning-modal">
       <div class="warning-header">
         <h3>Session Expiring Soon</h3>
-        <button @click="dismissWarning" class="close-btn">&times;</button>
+        <button
+          @click="dismissWarning"
+          class="close-btn">
+          &times;
+        </button>
       </div>
 
       <div class="warning-content">
         <h1>
-          For security reasons, sessions expire after 30 minutes. Your session
-          will expire in
-          <strong>{{ timeRemaining }}</strong> seconds.
+          For security reasons, sessions expire after 30 minutes. Your session will expire in
+          <strong>{{ timeRemaining }}</strong>
+          seconds.
         </h1>
         <h1>Would you like to extend your session?</h1>
       </div>
 
       <div class="warning-actions">
-        <button @click="logoutNow" class="logout-btn">Logout Now</button>
+        <button
+          @click="logoutNow"
+          class="logout-btn">
+          Logout Now
+        </button>
         <button
           @click="refreshSession"
           class="refresh-btn"
-          :disabled="refreshing"
-        >
+          :disabled="refreshing">
           {{ refreshing ? 'Refreshing...' : 'Extend session' }}
         </button>
       </div>
     </div>
   </div>
 
-  <div v-if="showExpiredModal" class="expired-overlay">
+  <div
+    v-if="showExpiredModal"
+    class="expired-overlay">
     <div class="expired-modal">
       <div class="expired-header">
         <h3>Session Expired</h3>
@@ -39,125 +50,129 @@
       </div>
 
       <div class="expired-actions">
-        <button @click="goToLogin" class="login-btn">Log back in</button>
+        <button
+          @click="goToLogin"
+          class="login-btn">
+          Log back in
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore';
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
 
-export default {
-  name: 'TokenExpirationWarning',
+  export default {
+    name: 'TokenExpirationWarning',
 
-  setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const showWarning = ref(false);
-    const showExpiredModal = ref(false);
-    const timeRemaining = ref(0);
-    const refreshing = ref(false);
-    let countdownInterval = null;
+    setup() {
+      const router = useRouter();
+      const authStore = useAuthStore();
+      const showWarning = ref(false);
+      const showExpiredModal = ref(false);
+      const timeRemaining = ref(0);
+      const refreshing = ref(false);
+      let countdownInterval = null;
 
-    const handleTokenWarning = (event) => {
-      timeRemaining.value = Math.floor(event.detail.timeRemaining / 1000);
-      showWarning.value = true;
+      const handleTokenWarning = event => {
+        timeRemaining.value = Math.floor(event.detail.timeRemaining / 1000);
+        showWarning.value = true;
 
-      countdownInterval = setInterval(() => {
-        timeRemaining.value--;
-        if (timeRemaining.value <= 0) {
-          clearInterval(countdownInterval);
-          showWarning.value = false;
-          showExpiredModal.value = true;
-        }
-      }, 1000);
-    };
+        countdownInterval = setInterval(() => {
+          timeRemaining.value--;
+          if (timeRemaining.value <= 0) {
+            clearInterval(countdownInterval);
+            showWarning.value = false;
+            showExpiredModal.value = true;
+          }
+        }, 1000);
+      };
 
-    const handleTokenExpired = () => {
-      showWarning.value = false;
-      router.push('/login?logoutSuccess=true');
-      showExpiredModal.value = true;
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-    };
-
-    const dismissWarning = () => {
-      showWarning.value = false;
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-    };
-
-    const refreshSession = async () => {
-      refreshing.value = true;
-      try {
-        const success = await authStore.refreshToken();
-        if (success) {
-          showWarning.value = false;
-        } else {
-          showWarning.value = false;
-          showExpiredModal.value = true;
-        }
-      } catch (error) {
-        console.error('Error refreshing session', error);
+      const handleTokenExpired = () => {
         showWarning.value = false;
+        router.push('/login?logoutSuccess=true');
         showExpiredModal.value = true;
-      } finally {
-        refreshing.value = false;
         if (countdownInterval) {
           clearInterval(countdownInterval);
         }
-      }
-    };
+      };
 
-    const logoutNow = () => {
-      authStore.logout();
-      showWarning.value = false;
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-      router.push('/login?logoutSuccess=true');
-    };
+      const dismissWarning = () => {
+        showWarning.value = false;
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+      };
 
-    const goToLogin = () => {
-      showExpiredModal.value = false;
-      authStore.logout();
-      router.push('/login');
-    };
+      const refreshSession = async () => {
+        refreshing.value = true;
+        try {
+          const success = await authStore.refreshToken();
+          if (success) {
+            showWarning.value = false;
+          } else {
+            showWarning.value = false;
+            showExpiredModal.value = true;
+          }
+        } catch (error) {
+          console.error('Error refreshing session', error);
+          showWarning.value = false;
+          showExpiredModal.value = true;
+        } finally {
+          refreshing.value = false;
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+          }
+        }
+      };
 
-    onMounted(() => {
-      window.addEventListener('tokenExpirationWarning', handleTokenWarning);
-      window.addEventListener('tokenExpired', handleTokenExpired);
-    });
+      const logoutNow = () => {
+        authStore.logout();
+        showWarning.value = false;
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        router.push('/login?logoutSuccess=true');
+      };
 
-    onUnmounted(() => {
-      window.removeEventListener('tokenExpirationWarning', handleTokenWarning);
-      window.removeEventListener('tokenExpired', handleTokenExpired);
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-    });
+      const goToLogin = () => {
+        showExpiredModal.value = false;
+        authStore.logout();
+        router.push('/login');
+      };
 
-    return {
-      showWarning,
-      showExpiredModal,
-      timeRemaining,
-      refreshing,
-      dismissWarning,
-      refreshSession,
-      logoutNow,
-      goToLogin,
-    };
-  },
-};
+      onMounted(() => {
+        window.addEventListener('tokenExpirationWarning', handleTokenWarning);
+        window.addEventListener('tokenExpired', handleTokenExpired);
+      });
+
+      onUnmounted(() => {
+        window.removeEventListener('tokenExpirationWarning', handleTokenWarning);
+        window.removeEventListener('tokenExpired', handleTokenExpired);
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+      });
+
+      return {
+        showWarning,
+        showExpiredModal,
+        timeRemaining,
+        refreshing,
+        dismissWarning,
+        refreshSession,
+        logoutNow,
+        goToLogin,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.warning-overlay,
+  .warning-overlay,
 .expired-overlay {
   position: fixed;
   top: 0;

@@ -5,6 +5,62 @@ const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'Access token required',
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({
+        error: 'Invalid or expired token',
+      });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Authentication required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, email: true, isAdmin: true, isActive: true },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        error: 'User not found or inactive',
+      });
+    }
+
+    if (!user.isAdmin) {
+      return res.status(403).json({
+        error: 'Admin privileges are required',
+      });
+    }
+
+    req.user.isAdmin = user.isAdmin;
+    next();
+  } catch (error) {
+    console.error('Admin authroization error:', error);
+    res.status(500).json({
+      error: 'Internal server error during authorization',
+    });
+  }
+};
+
 router.post('/register', async (req, res) => {
   try {
     const { email, firstName, lastName, phone, address, password } = req.body;
@@ -54,7 +110,7 @@ router.post('/register', async (req, res) => {
         email: newUser.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30s' } //change to 30m
+      { expiresIn: '30m' } //change to 30m
     );
 
     res.status(201).json({
@@ -84,9 +140,15 @@ router.post('/login', async (req, res) => {
       where: { email },
     });
 
+    if (!user) {
+      return res.status(401).json({
+        error: 'Invalid credentials',
+      });
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password);
 
-    if (!user || !isValidPassword) {
+    if (!isValidPassword) {
       return res.status(401).json({
         error: 'Invalid credentials',
       });
@@ -94,8 +156,7 @@ router.post('/login', async (req, res) => {
 
     if (!user.isActive) {
       return res.status(401).json({
-        error:
-          'Your account has been disabled. Please contact an administrator.',
+        error: 'Your account has been disabled. Please contact an administrator.',
       });
     }
 
@@ -106,7 +167,7 @@ router.post('/login', async (req, res) => {
         isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30s' } //change to 30m
+      { expiresIn: '30m' } //change to 30m
     );
 
     res.json({
@@ -155,7 +216,7 @@ router.post('/refresh', async (req, res) => {
         isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30s' } //change to 30m
+      { expiresIn: '30m' } //change to 30m
     );
     res.json({
       message: 'Token refreshed successfully',
@@ -203,8 +264,7 @@ router.post('/verify-identity', async (req, res) => {
       });
     }
 
-    const isValidEmail =
-      email.trim().toLowerCase() === user.email.trim().toLowerCase();
+    const isValidEmail = email.trim().toLowerCase() === user.email.trim().toLowerCase();
     const isValidPhone = phone.trim() === user.phone.trim();
 
     if (!isValidEmail) {
@@ -276,4 +336,8 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = {
+  router: router,
+  authenticateToken,
+  requireAdmin,
+};

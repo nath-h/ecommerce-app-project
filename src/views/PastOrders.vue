@@ -5,60 +5,53 @@
       <button
         @click="store.clearOrders()"
         class="btn btn-danger"
-        style="margin-bottom: 20px"
-      >
+        style="margin-bottom: 20px">
         Clear All Orders
       </button>
       <button
         @click="store.clearAllStoredData()"
         class="btn btn-danger"
-        style="margin-bottom: 20px; margin-left: 8px"
-      >
+        style="margin-bottom: 20px; margin-left: 8px">
         Clear All Locally Stored Data
       </button>
 
       <div
         v-for="order in store.pastOrders"
         :key="order.id"
-        class="order-section"
-      >
+        class="order-section">
         <div class="order-header">
           <div class="order-header-top">
             <div>
               <h3>Order #{{ order.id }}</h3>
               <p class="order-date">{{ formatDate(order.date) }}</p>
               <p class="order-customer">
-                <strong>Customer:</strong> {{ order.customer.name }}
+                <strong>Customer:</strong>
+                {{ order.customer.name }}
               </p>
 
               <div v-if="hasOrderDiscount(order)">
                 <p class="order-total-header">
-                  <strong
-                    >Order Subtotal:
+                  <strong>
+                    Order Subtotal:
                     <del style="color: red; margin-right: 8px">
                       {{ $formatCurrency(order.subtotal) }}
                     </del>
                   </strong>
                 </p>
                 <p class="order-total-header">
-                  <strong>
-                    New Order Total: {{ $formatCurrency(order.total) }}
-                  </strong>
+                  <strong>New Order Total: {{ $formatCurrency(order.total) }}</strong>
                 </p>
               </div>
               <div v-else>
                 <p class="order-total-header">
-                  <strong
-                    >Order Total: {{ $formatCurrency(order.total) }}</strong
-                  >
+                  <strong>Order Total: {{ $formatCurrency(order.total) }}</strong>
                 </p>
               </div>
             </div>
             <button
               @click="store.deleteOrder(order.id)"
               class="btn btn-danger delete-order-btn"
-              title="Delete this order"
-            >
+              title="Delete this order">
               Delete Order
             </button>
           </div>
@@ -77,7 +70,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in order.items" :key="`${order.id}-${item.name}`">
+            <tr
+              v-for="item in order.items"
+              :key="`${order.id}-${item.name}`">
               <td><i :class="`icofont-${item.icon} icofont-4x`"></i></td>
               <td>{{ item.name }}</td>
               <td>
@@ -89,19 +84,15 @@
                     {{ $formatCurrency(item.discountedPrice) }}
                   </span>
                 </span>
-                <span v-else> {{ $formatCurrency(item.price) }} </span>
+                <span v-else>{{ $formatCurrency(item.price) }}</span>
               </td>
               <td>{{ $formatNumber(item.quantity) }}</td>
               <template v-if="hasDiscounts(order)">
                 <td>
                   <span v-if="hasItemDiscount">
-                    <del style="color: red; margin-right: 8px"
-                      >{{ $formatCurrency(item.originalTotal) }}
-                    </del>
+                    <del style="color: red; margin-right: 8px">{{ $formatCurrency(item.originalTotal) }}</del>
                     <span style="color: #42b983; font-weight: bold">
-                      <strong
-                        >{{ $formatCurrency(item.discountedTotal) }}
-                      </strong>
+                      <strong>{{ $formatCurrency(item.discountedTotal) }}</strong>
                     </span>
                   </span>
                 </td>
@@ -110,8 +101,7 @@
               <td>
                 <button
                   class="btn btn-dark"
-                  @click="store.addToCart(item.name, item.quantity)"
-                >
+                  @click="store.addToCart(item.name, item.quantity)">
                   Add to Cart
                 </button>
               </td>
@@ -119,15 +109,15 @@
           </tbody>
         </table>
 
-        <button class="btn btn-dark" @click="addAllToCart(order)">
+        <button
+          class="btn btn-dark"
+          @click="addAllToCart(order)">
           Add all items to your cart
         </button>
         <div
           v-if="order.subtotal - order.total > 0"
-          style="color: #42b983; font-weight: bold; padding-top: 15px"
-        >
-          You saved: {{ $formatCurrency(order.subtotal - order.total) }} using
-          {{ order.coupon?.code }}!
+          style="color: #42b983; font-weight: bold; padding-top: 15px">
+          You saved: {{ $formatCurrency(order.subtotal - order.total) }} using {{ order.coupon?.code }}!
         </div>
       </div>
     </div>
@@ -137,8 +127,7 @@
       <button
         @click="store.clearAllStoredData()"
         class="btn btn-danger"
-        style="margin-bottom: 20px"
-      >
+        style="margin-bottom: 20px">
         Clear All Locally Stored Data
       </button>
     </div>
@@ -146,52 +135,52 @@
 </template>
 
 <script>
-import { useEcommerceStore } from '@/stores/ecommerce';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
-export default {
-  name: 'PastOrders',
-  setup() {
-    const store = useEcommerceStore();
+  export default {
+    name: 'PastOrders',
+    setup() {
+      const store = useEcommerceStore();
 
-    const formatDate = (dateString) => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
-    };
+      const formatDate = dateString => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
+      };
 
-    const addAllToCart = (order) => {
-      order.items.forEach((item) => {
-        store.addToCart(item.name, item.quantity);
-      });
-    };
+      const addAllToCart = order => {
+        order.items.forEach(item => {
+          store.addToCart(item.name, item.quantity);
+        });
+      };
 
-    const hasItemDiscount = (item) => {
-      const tolerance = 0.01;
-      return Math.abs(item.originalTotal - item.discountedTotal) > tolerance;
-    };
+      const hasItemDiscount = item => {
+        const tolerance = 0.01;
+        return Math.abs(item.originalTotal - item.discountedTotal) > tolerance;
+      };
 
-    const hasDiscounts = (order) => {
-      return order.items.some((item) => hasItemDiscount(item));
-    };
+      const hasDiscounts = order => {
+        return order.items.some(item => hasItemDiscount(item));
+      };
 
-    const hasOrderDiscount = (order) => {
-      const tolerance = 0.01;
-      return Math.abs(order.subtotal - order.total) > tolerance;
-    };
+      const hasOrderDiscount = order => {
+        const tolerance = 0.01;
+        return Math.abs(order.subtotal - order.total) > tolerance;
+      };
 
-    return {
-      store,
-      formatDate,
-      addAllToCart,
-      hasDiscounts,
-      hasItemDiscount,
-      hasOrderDiscount,
-    };
-  },
-};
+      return {
+        store,
+        formatDate,
+        addAllToCart,
+        hasDiscounts,
+        hasItemDiscount,
+        hasOrderDiscount,
+      };
+    },
+  };
 </script>
 
 <style scoped>
-.order-section {
+  .order-section {
   margin-bottom: 40px;
   padding: 20px;
   border: 2px solid #ddd;
