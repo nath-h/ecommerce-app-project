@@ -22,9 +22,14 @@
           User Management
         </button>
         <button
+          :class="['tab-btn', { active: activeTab === 'coupons' }]"
+          @click="setActiveTab('coupons')">
+          Coupon Management
+        </button>
+        <button
           :class="['tab-btn', { active: activeTab === 'actions' }]"
           @click="setActiveTab('actions')">
-          Admin Actions
+          Admin Actions Log
         </button>
       </nav>
 
@@ -73,27 +78,27 @@
                   required
                   :disabled="isLoading" />
               </div>
-            </div>
 
-            <div class="form-field full-width">
-              <label>Address *</label>
-              <input
-                v-model="userForm.address"
-                type="text"
-                required
-                :disabled="isLoading" />
-            </div>
+              <div class="form-field">
+                <label>Address *</label>
+                <input
+                  v-model="userForm.address"
+                  type="text"
+                  required
+                  :disabled="isLoading" />
+              </div>
 
-            <div
-              v-if="!editMode"
-              class="form-field full-width">
-              <label>Password *</label>
-              <input
-                v-model="userForm.password"
-                type="password"
-                required
-                minlength="6"
-                :disabled="isLoading" />
+              <div
+                v-if="!editMode"
+                class="form-field">
+                <label>Password *</label>
+                <input
+                  v-model="userForm.password"
+                  type="password"
+                  required
+                  minlength="6"
+                  :disabled="isLoading" />
+              </div>
             </div>
 
             <div class="form-checkboxes">
@@ -197,6 +202,180 @@
       </section>
 
       <section
+        v-if="activeTab === 'coupons'"
+        class="tab-content">
+        <div class="form-section">
+          <h2>{{ editingCouponId ? 'Edit Coupon' : 'Add new coupon' }}</h2>
+
+          <form
+            @submit.prevent="handleCouponSubmit"
+            class="coupon-form">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Code *</label>
+                <input
+                  v-model="couponForm.code"
+                  type="text"
+                  required
+                  :disabled="isLoading"
+                  placeholder="Coupon Code" />
+              </div>
+
+              <div class="form-field">
+                <label>Type *</label>
+                <select
+                  v-model="couponForm.type"
+                  required
+                  :disabled="isLoading">
+                  <option value="PERCENTAGE">Percentage</option>
+                  <option value="FIXED">Fixed Amount</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label>Value *</label>
+                <input
+                  v-model="couponForm.value"
+                  type="number"
+                  step="0.01"
+                  required
+                  :disabled="isLoading"
+                  :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
+              </div>
+
+              <div class="form-field">
+                <label>Minimum Order Amount</label>
+                <input
+                  v-model="couponForm.minOrder"
+                  type="number"
+                  step="0.01"
+                  :disabled="isLoading"
+                  placeholder="50.00" />
+              </div>
+
+              <div class="form-field">
+                <label>Maximum Discount</label>
+                <input
+                  v-model="couponForm.maxDiscount"
+                  type="number"
+                  step="0.01"
+                  :disabled="isLoading"
+                  placeholder="100.00" />
+              </div>
+
+              <div class="form-field">
+                <label>Expires At</label>
+                <input
+                  v-model="couponForm.expiresAt"
+                  type="datetime-local"
+                  :disabled="isLoading" />
+              </div>
+            </div>
+
+            <div class="form-field full-width">
+              <label>Description</label>
+              <textarea
+                v-model="couponForm.description"
+                :disabled="isLoading"
+                rows="3"
+                placeholder="Enter coupon description..."></textarea>
+            </div>
+
+            <div class="form-checkboxes">
+              <label class="checkbox-label">
+                <input
+                  v-model="couponForm.isActive"
+                  type="checkbox"
+                  :disabled="isLoading" />
+                <span>Active</span>
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                :disabled="isLoading"
+                class="btn btn-primary">
+                {{ isLoading ? 'Saving...' : editingCouponId ? 'Update coupon' : 'Create coupon' }}
+              </button>
+
+              <button
+                v-if="editingCouponId"
+                type="button"
+                @click="cancelCouponEdit"
+                :disabled="isLoading"
+                class="btn btn-secondary">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="coupons-section">
+          <h2>All coupons</h2>
+          <div
+            v-if="loadingCoupons"
+            class="loading-state">
+            Loading coupons...
+          </div>
+
+          <div
+            v-else
+            class="table-wrapper">
+            <table class="coupons-table">
+              <thead>
+                <tr>
+                  <th>Coupon ID</th>
+                  <th>Code</th>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>Min Order Amount</th>
+                  <th>Max Discount</th>
+                  <th>Status</th>
+                  <th>Expires At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="coupon in coupons"
+                  :key="coupon.id">
+                  <td>{{ coupon.id }}</td>
+                  <td>{{ coupon.code }}</td>
+                  <td>{{ formatCouponType(coupon.type) }}</td>
+                  <td>{{ formatCouponValue(coupon) }}</td>
+                  <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
+                  <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
+                  <td>
+                    <span
+                      :class="[
+                        'badge',
+                        {
+                          'badge-active': coupon.isActive && !isCouponExpired(coupon.expiresAt),
+                          'badge-inactive': !coupon.isActive,
+                          'badge-expired': isCouponExpired(coupon.expiresAt),
+                        },
+                      ]">
+                      {{ isCouponExpired(coupon.expiresAt) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>{{ coupon.expiresAt ? formatDate(coupon.expiresAt) : 'Never' }}</td>
+                  <td>
+                    <button
+                      @click="editCoupon(coupon)"
+                      :disabled="isLoading"
+                      class="btn btn-sb btn-outline">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section
         v-if="activeTab === 'actions'"
         class="tab-content">
         <h2>Admin Actions Log</h2>
@@ -271,6 +450,20 @@
   const loadingActions = ref(false);
   const editMode = ref(false);
   const editingUserId = ref(null);
+  const coupons = ref([]);
+  const loadingCoupons = ref(false);
+  const editingCouponId = ref(null);
+
+  const couponForm = reactive({
+    code: '',
+    type: 'PERCENTAGE',
+    value: '',
+    description: '',
+    minOrder: 0,
+    maxDiscount: '',
+    expiresAt: '',
+    isActive: true,
+  });
 
   const message = reactive({
     show: false,
@@ -301,6 +494,8 @@
     activeTab.value = tab;
     if (tab === 'actions' && adminActions.value.length === 0) {
       fetchAdminActions();
+    } else if (tab === 'coupons' && coupons.value.length === 0) {
+      fetchCoupons();
     }
   };
 
@@ -349,6 +544,103 @@
     } finally {
       loadingUsers.value = false;
     }
+  };
+
+  const fetchCoupons = async () => {
+    loadingCoupons.value = true;
+
+    try {
+      const response = await makeAuthenticatedRequest('/api/coupon/admin');
+      const data = await response.json();
+
+      if (response.ok) {
+        coupons.value = data.coupons;
+      } else {
+        throw new Error(data.error || 'Failed to fetch coupons');
+      }
+    } catch (error) {
+      console.error('Error fetching coupons', error);
+      showMessage(error.message, 'error');
+    } finally {
+      loadingCoupons.value = false;
+    }
+  };
+
+  const handleCouponSubmit = async () => {
+    isLoading.value = true;
+
+    try {
+      const url = editingCouponId.value ? `/api/coupon/admin/${editingCouponId.value}` : '/api/coupon/admin';
+      const formData = {
+        ...couponForm,
+        maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
+        minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
+        value: parseFloat(couponForm.value),
+      };
+      const response = await makeAuthenticatedRequest(url, {
+        method: editingCouponId.value ? 'PUT' : 'POST',
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Operation failed');
+      }
+      showMessage(data.message);
+      resetCouponForm();
+      await Promise.all([fetchCoupons(), fetchAdminActions()]);
+    } catch (error) {
+      console.error('Error submitting coupon:', error);
+      showMessage(error.message, 'error');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const editCoupon = coupon => {
+    editingCouponId.value = coupon.id;
+    Object.assign(couponForm, {
+      id: coupon.id,
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      description: coupon.description || '',
+      minOrder: coupon.minOrder || 0,
+      maxDiscount: coupon.maxDiscount || '',
+      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().slice(0, 16) : '',
+      isActive: coupon.isActive,
+    });
+  };
+
+  const isCouponExpired = expiresAt => {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  };
+
+  const resetCouponForm = () => {
+    editingCouponId.value = null;
+    Object.assign(couponForm, {
+      code: '',
+      type: 'PERCENTAGE',
+      value: '',
+      description: '',
+      minOrder: 0,
+      maxDiscount: '',
+      expiresAt: '',
+      isActive: true,
+    });
+  };
+
+  const cancelCouponEdit = () => {
+    resetCouponForm();
+  };
+
+  const formatCouponValue = coupon => {
+    return coupon.type === 'PERCENTAGE' ? `${coupon.value}%` : `$${coupon.value}`;
+  };
+
+  const formatCouponType = type => {
+    return type.charAt(0) + type.slice(1).toLowerCase();
   };
 
   const fetchAdminActions = async () => {
@@ -424,20 +716,6 @@
       }
 
       if (response.ok) {
-        if (editMode.value && Object.keys(changes).length > 0) {
-          await makeAuthenticatedRequest('/api/admin/actions', {
-            method: 'POST',
-            body: JSON.stringify({
-              action: 'UPDATED_USER',
-              entityType: 'USER',
-              entityId: editingUserId.value.toString(),
-              details: JSON.stringify({
-                userId: editingUserId.value,
-                changes: changes,
-              }),
-            }),
-          });
-        }
         showMessage(data.message);
         resetForm();
         await Promise.all([fetchUsers(), fetchAdminActions()]);
@@ -492,14 +770,26 @@
     if (!details) return 'No details available';
 
     try {
-      const changes = JSON.parse(details);
-      return Object.entries(changes)
-        .map(([field, { from, to }]) => {
-          const fromValue = from ?? 'undefined';
-          const toValue = to ?? 'undefined';
-          return `${field}: from ${fromValue} -> ${toValue}`;
-        })
-        .join('<br>');
+      const parsed = JSON.parse(details);
+
+      if (parsed.changes) {
+        return Object.entries(parsed.changes)
+          .map(([field, { from, to }]) => {
+            return `${field}: ${from} → ${to}`;
+          })
+          .join('<br>');
+      }
+
+      if (parsed.userId || typeof parsed === 'string') {
+        const message = typeof parsed === 'string' ? parsed : `Created user with ID: ${parsed.userId}`;
+        return message;
+      }
+
+      if (parsed.code && parsed.type) {
+        const value = parsed.type === 'PERCENTAGE' ? `${parsed.value}%` : `$${parsed.value}`;
+        return `Created coupon: ${parsed.code}<br>Type: ${parsed.type}<br>Value: ${value}`;
+      }
+      return JSON.stringify(parsed, null, 2).replace(/\n/g, '<br>');
     } catch (error) {
       return details;
     }
@@ -513,7 +803,13 @@
 </script>
 
 <style scoped>
-  .admin-dashboard {
+  .body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.admin-dashboard {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
@@ -522,9 +818,8 @@
 
 .admin-header {
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid slategray;
 }
 
 .admin-header h1 {
@@ -549,8 +844,19 @@
 
 .tab-nav {
   display: flex;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #e9ecef;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid slategray;
+}
+
+.tab-content {
+  width: 100%;
+}
+
+.tab-content h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
 .tab-btn {
@@ -560,8 +866,8 @@
   cursor: pointer;
   border-bottom: 3px solid transparent;
   font-size: 1rem;
-  font-weight: 500;
-  color: #6c757d;
+  font-weight: bold;
+  color: darkcyan;
   transition: all 0.3s ease;
 }
 
@@ -577,14 +883,21 @@
 
 .form-section {
   background: #f8f9fa;
-  padding: 2rem;
+   border: 1px solid #dee2e6;
   border-radius: 8px;
+  padding: 2rem;
   margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: none;
 }
 
 .form-section h2 {
   color: #2c3e50;
-  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .user-form {
@@ -595,18 +908,16 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
+  margin-bottom: 2rem;
 }
 
-.form-field.full-width {
-  grid-column: 1 / -1;
-}
 
 .form-field label {
   margin-bottom: 0.5rem;
@@ -615,6 +926,8 @@
 }
 
 .form-field input {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.75rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -634,8 +947,7 @@
 
 .form-checkboxes {
   display: flex;
-  gap: 2rem;
-  margin-top: 1rem;
+  justify-content: center;
 }
 
 .checkbox-label {
@@ -651,9 +963,8 @@
 }
 
 .form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  justify-content: flex-start;
+  border-top: 1px solid #e9ecef;
 }
 
 .btn {
@@ -705,47 +1016,77 @@
   font-size: 0.875rem;
 }
 
-.users-section h2 {
+.users-section, .coupons-section, h2 {
   color: #2c3e50;
   margin-bottom: 1rem;
+  text-align: center;
+}
+
+.admin-content {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.users-section, .coupons-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .table-wrapper {
-  overflow-x: auto;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  border: 1px solid #dee2e6
+  border: 1px solid #dee2e6;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
-.users-table, .actions-table {
+.users-table, .actions-table, .coupons-table {
   width: 100%;
+  min-width: 800px;
+  table-layout: auto;
   border-collapse: separate;
   border-spacing: 0;
-  border: 1px solid gray
-}
-
-.users-table th, .users-table td,
-.actions-table th, .actions-table td {
-  padding: 1rem;
-  text-align: left;
   border: 1px solid gray;
+  background: white;
+  margin: 0;
+}
+.users-table th, .actions-table th, .users-table th {
+  text-align: center;
+}
+.users-table th, .users-table td,
+.actions-table th, .actions-table td, 
+.coupons-table th, .coupons-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid gray;
+  border-right: 1px solid gray;
+  text-align: center;
+  vertical-align: middle;
+  background: inherit;
 }
 
-.users-table th, .actions-table th {
+.users-table th, .actions-table th, .coupons-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #2c3e50;
-  border-bottom: 2px solid #dee2e6
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .users-table tbody tr:nth-child(even),
-.actions-table tbody tr:nth-child(even) {
+.actions-table tbody tr:nth-child(even),
+.coupons-table tbody tr:nth-child(even) {
   background-color: lightgrey;
 }
 
 .users-table tbody tr:hover,
-.actions-table tbody tr:hover {
+.actions-table tbody tr:hover,
+.coupons-table tbody tr:hover {
    background-color: #e3f2fd;
   transition: background-color 0.2s ease;
 }
@@ -772,6 +1113,13 @@
   color: #721c24;
 }
 
+.badge-expired {
+  background-color: darkgrey;
+  color: #495057;
+  text-shadow: 0 0.5px 0.5px rgba(0,0,0,0.6);
+  border: 1px solid #ced4da;
+}
+
 .badge-admin {
   background-color: #fff3cd;
   color: #856404;
@@ -780,6 +1128,23 @@
 .badge-user {
   background-color: #cfe2ff;
   color: #084298;
+}
+
+.coupon-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.coupon-form select {
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
 }
 
 .badge-reactivated {

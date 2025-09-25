@@ -20,9 +20,11 @@ app.use((req, res, next) => {
 const { router: authRouter } = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const ordersRoutes = require('./routes/orders');
-const adminRoutes = require('./routes/admin');
+const { router: adminRouter } = require('./routes/admin');
+const couponRoutes = require('./routes/coupon');
 
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRouter);
+app.use('/api/coupon', couponRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api', productRoutes);

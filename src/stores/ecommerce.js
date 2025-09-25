@@ -7,7 +7,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
     cart: [],
     loading: false,
     error: null,
-    coupons: [],
     showSidebar: false,
     activeCoupon: null,
     couponError: '',
@@ -114,17 +113,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    async fetchCoupons() {
-      try {
-        const response = await fetch('/api/coupons');
-        if (response.ok) {
-          this.coupons = await response.json();
-        }
-      } catch (error) {
-        console.error('Error fetching coupons:', error);
-      }
-    },
-
     async validateCartStock() {
       this.stockValidationErrors = [];
       let hasChanges = false;
@@ -180,7 +168,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     async initializeStore() {
       await this.fetchProducts();
-      await this.fetchCoupons();
 
       const savedCart = localStorage.getItem('ecommerce-cart');
       if (savedCart) {
@@ -272,7 +259,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.showSidebar = !this.showSidebar;
     },
 
-    applyCoupon(couponCode) {
+    async applyCoupon(couponCode) {
       this.couponError = '';
 
       if (!couponCode || !couponCode.trim()) {
@@ -280,24 +267,26 @@ export const useEcommerceStore = defineStore('ecommerce', {
         return false;
       }
 
-      const coupon = this.coupons.find(c => c.code.toLowerCase() === couponCode.toLowerCase() && c.isActive);
+      try {
+        const response = await fetch(`/api/coupon/${couponCode}/validate?subtotal=${this.cartSubtotal}`);
+        const data = await response.json();
 
-      if (!coupon) {
-        this.couponError = 'Invalid coupon code';
+        if (!response.ok) {
+          this.couponError = data.error;
+          return false;
+        }
+        this.activeCoupon = {
+          ...data,
+          value: parseFloat(data.value),
+          minOrder: parseFloat(data.minOrder),
+          maxDiscount: data.maxDiscount ? parseFloat(data.maxDiscount) : null,
+        };
+        return true;
+      } catch (error) {
+        console.error('Error applying coupon:', error);
+        this.couponError = 'Failed to validate coupon';
         return false;
       }
-      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
-        this.couponError = 'This coupon has expired';
-        return false;
-      }
-
-      const subtotal = this.cartSubtotal;
-      if (subtotal < parseFloat(coupon.minOrder)) {
-        this.couponError = `Minimum order of $${parseFloat(coupon.minOrder).toFixed(2)} required for this coupon`;
-        return false;
-      }
-      this.activeCoupon = coupon;
-      return true;
     },
 
     //Might still need to implement this

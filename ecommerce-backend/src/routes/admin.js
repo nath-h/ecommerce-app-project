@@ -16,7 +16,7 @@ const logAdminAction = async (adminId, action, entityType, entityId, details = n
         action,
         entityType,
         entityId: String(entityId),
-        details,
+        details: details ? JSON.stringify(details) : null,
       },
     });
   } catch (error) {
@@ -112,7 +112,7 @@ router.post('/users', async (req, res) => {
       'CREATED_USER',
       'USER',
       newUser.id.toString(),
-      `Created user: ${newUser.firstName} ${newUser.lastName} (${newUser.email})`
+      `Created user: ${newUser.firstName}<br> ${newUser.lastName}<br> ${newUser.email}`
     );
     res.status(201).json({
       message: 'User created successfully',
@@ -155,7 +155,7 @@ router.put('/users/:id', async (req, res) => {
       updateData.email = email.toLowerCase().trim();
       changes.email = {
         from: existingUser.email,
-        to: email.toLowerCase.trim(),
+        to: email.toLowerCase().trim(),
       };
     }
     if (firstName != undefined && firstName !== existingUser.firstName) {
@@ -243,9 +243,7 @@ router.put('/users/:id', async (req, res) => {
       },
     });
 
-    if (Object.keys(changes).length > 0) {
-      await logAdminAction(req.user.userId, actionType, 'USER', userId, JSON.stringify(changes));
-    }
+    await logAdminAction(req.user.userId, actionType, 'USER', userId, { changes });
     res.json({
       message:
         actionType === 'DISABLED_USER'
@@ -306,4 +304,7 @@ router.get('/actions', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = {
+  router,
+  logAdminAction,
+};
