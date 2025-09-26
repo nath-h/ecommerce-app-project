@@ -148,7 +148,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
               this.stockValidationErrors.push(`${product.name} is out of stock and was removed from your cart.`);
             } else {
               this.stockValidationErrors.push(
-                `${product.name} quantity reduced from ${oldQuantity} to ${cartItem.quantity} due to limited stock.`
+                `Cart quantity of ${product.name} reduced from ${oldQuantity} to ${cartItem.quantity} due to limited stock.`
               );
             }
             hasChanges = true;
@@ -169,16 +169,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
     async initializeStore() {
       await this.fetchProducts();
 
-      const savedCart = localStorage.getItem('ecommerce-cart');
-      if (savedCart) {
-        try {
-          const parsedCart = JSON.parse(savedCart);
-          this.cart = parsedCart;
-        } catch (error) {
-          console.error('Error parsing saved cart:', error);
-          this.cart = [];
-        }
-      }
+      this.loadFromLocalStorage();
     },
 
     loadFromLocalStorage() {
@@ -209,24 +200,23 @@ export const useEcommerceStore = defineStore('ecommerce', {
         return false;
       }
 
-      if (quantity > product.stock) {
-        console.log(`Insufficient stock. Requested: ${quantity}, Available: ${product.stock}`);
+      const existingItem = this.cart.find(item => item.productId === productId);
+      const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+      const totalRequestedQuantity = currentCartQuantity + quantity;
+
+      if (totalRequestedQuantity > product.stock) {
+        console.log(`Insufficient stock. Requested total ${totalRequestedQuantity}, Available: ${product.stock}`);
         return false;
       }
 
-      const existingItem = this.cart.find(item => item.productId === productId);
-
       if (existingItem) {
         existingItem.quantity += quantity;
-        product.stock -= quantity;
         console.log(`Adding ${quantity} to cart. ${product.stock} remaining`);
       } else {
         this.cart.push({
           productId: productId,
           quantity: quantity,
         });
-
-        product.stock -= quantity;
       }
       this.saveCartToLocalStorage();
       return true;
@@ -253,6 +243,16 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.cart = [];
       this.saveCartToLocalStorage();
       this.removeCoupon();
+    },
+
+    getAvailableStock(productId) {
+      const product = this.inventory.find(p => p.id === productId);
+      if (!product) return 0;
+
+      const cartItem = this.cart.find(item => item.productId === productId);
+      const reservedInCart = cartItem ? cartItem.quantity : 0;
+
+      return Math.max(0, product.stock - reservedInCart);
     },
 
     toggleSidebar() {
@@ -416,14 +416,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    deleteOrder(orderId) {
-      this.pastOrders = this.pastOrders.filter(order => order.id !== orderId);
-    },
-
-    clearOrders() {
-      this.pastOrders = [];
-    },
-
     clearAllStoredData() {
       try {
         localStorage.removeItem('ecommerce-cart');
@@ -433,14 +425,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       } catch (error) {
         console.error('Error clearing localStorage', error);
       }
-    },
-
-    initializeInventory() {
-      this.inventory.forEach(item => {
-        if (item.quantity === undefined) {
-          item.quantity = 0;
-        }
-      });
     },
   },
 });

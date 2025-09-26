@@ -207,7 +207,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (userId && order.userId != parseInt(userId)) {
+    if (userId && order.userId !== parseInt(userId)) {
       return res.status(403).json({ error: 'Access denied' });
     }
     res.json(order);

@@ -57,7 +57,7 @@ router.get('/users', async (req, res) => {
 
 router.post('/users', async (req, res) => {
   try {
-    const { email, password, firstName, lastName, phone, address, isAdmin = false } = req.body;
+    const { userId, email, password, firstName, lastName, phone, address, isAdmin = false } = req.body;
 
     if (!email || !password || !firstName || !lastName || !phone || !address) {
       return res.status(400).json({
@@ -107,13 +107,12 @@ router.post('/users', async (req, res) => {
       },
     });
 
-    await logAdminAction(
-      req.user.userId,
-      'CREATED_USER',
-      'USER',
-      newUser.id.toString(),
-      `Created user: ${newUser.firstName}<br> ${newUser.lastName}<br> ${newUser.email}`
-    );
+    await logAdminAction(req.user.userId, 'CREATED_USER', 'USER', newUser.id, {
+      id: newUser.id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+    });
     res.status(201).json({
       message: 'User created successfully',
       user: newUser,

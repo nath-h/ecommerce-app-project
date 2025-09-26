@@ -573,7 +573,7 @@
       const url = editingCouponId.value ? `/api/coupon/admin/${editingCouponId.value}` : '/api/coupon/admin';
       const formData = {
         ...couponForm,
-        maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
+        maxDiscount: parseFloat(couponForm.maxDiscount) === '' ? null : parseFloat(couponForm.maxDiscount),
         minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
         value: parseFloat(couponForm.value),
       };
@@ -606,8 +606,8 @@
       value: coupon.value,
       description: coupon.description || '',
       minOrder: coupon.minOrder || 0,
-      maxDiscount: coupon.maxDiscount || '',
-      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().slice(0, 16) : '',
+      maxDiscount: parseFloat(coupon.maxDiscount) || null,
+      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleString('en-US').slice(0, 16) : '',
       isActive: coupon.isActive,
     });
   };
@@ -775,19 +775,18 @@
       if (parsed.changes) {
         return Object.entries(parsed.changes)
           .map(([field, { from, to }]) => {
-            return `${field}: ${from} → ${to}`;
+            return `<strong>${field}: </strong>${from}→${to}`;
           })
           .join('<br>');
       }
 
-      if (parsed.userId || typeof parsed === 'string') {
-        const message = typeof parsed === 'string' ? parsed : `Created user with ID: ${parsed.userId}`;
-        return message;
+      if (parsed.id || parsed.firstName || parsed.lastName) {
+        return `<strong>Created user: </strong>${parsed.id}<br> <strong>First Name: </strong>${parsed.firstName}<br><strong>Last name: </strong>${parsed.lastName}<br> <strong>Email: </strong>${parsed.email}`;
       }
 
       if (parsed.code && parsed.type) {
         const value = parsed.type === 'PERCENTAGE' ? `${parsed.value}%` : `$${parsed.value}`;
-        return `Created coupon: ${parsed.code}<br>Type: ${parsed.type}<br>Value: ${value}`;
+        return `<strong>Created coupon: </strong>${parsed.code}<br> <strong>Type: </strong>${parsed.type}<br><strong>Value: </strong>${value}`;
       }
       return JSON.stringify(parsed, null, 2).replace(/\n/g, '<br>');
     } catch (error) {

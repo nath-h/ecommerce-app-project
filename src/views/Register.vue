@@ -14,7 +14,13 @@
               type="text"
               required
               :disabled="loading"
-              class="form-input" />
+              class="form-input"
+              :class="{ error: validationErrors.firstName }" />
+            <div
+              v-if="validationErrors.firstName"
+              class="field-error">
+              {{ validationErrors.firstName }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -25,7 +31,13 @@
               type="text"
               required
               :disabled="loading"
-              class="form-input" />
+              class="form-input"
+              :class="{ error: validationErrors.lastName }" />
+            <div
+              v-if="validationErrors.lastName"
+              class="field-error">
+              {{ validationErrors.lastName }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -36,7 +48,13 @@
               type="email"
               required
               :disabled="loading"
-              class="form-input" />
+              class="form-input"
+              :class="{ error: validationErrors.email }" />
+            <div
+              v-if="validationErrors.email"
+              class="field-error">
+              {{ validationErrors.email }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -47,7 +65,14 @@
               type="tel"
               required
               :disabled="loading"
-              class="form-input" />
+              class="form-input"
+              :class="{ error: validationErrors.phone }"
+              @input="formatPhoneInput" />
+            <div
+              v-if="validationErrors.phone"
+              class="field-error">
+              {{ validationErrors.phone }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -58,7 +83,13 @@
               required
               :disabled="loading"
               class="form-input"
+              :class="{ error: validationErrors.address }"
               rows="3" />
+            <div
+              v-if="validationErrors.address"
+              class="field-error">
+              {{ validationErrors.address }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -70,7 +101,13 @@
               required
               :disabled="loading"
               class="form-input"
+              :class="{ error: validationErrors.password }"
               minLength="6" />
+            <div
+              v-if="validationErrors.password"
+              class="field-error">
+              {{ validationErrors.password }}
+            </div>
           </div>
 
           <div class="form-group">
@@ -82,7 +119,13 @@
               required
               :disabled="loading"
               class="form-input"
+              :class="{ error: validationErrors.confirmPassword }"
               minLength="6" />
+            <div
+              v-if="validationErrors.confirmPassword"
+              class="field-error">
+              {{ validationErrors.confirmPassword }}
+            </div>
           </div>
 
           <div
@@ -115,7 +158,7 @@
 </template>
 
 <script>
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/authStore';
 
@@ -139,31 +182,104 @@
       const error = ref('');
       const success = ref('');
 
-      const isFormValid = computed(() => {
-        return (
-          formData.value.firstName.trim() &&
-          formData.value.lastName.trim() &&
-          formData.value.email.trim() &&
-          formData.value.phone.trim() &&
-          formData.value.address.trim() &&
-          formData.value.password &&
-          formData.value.confirmPassword &&
-          formData.value.password === formData.value.confirmPassword &&
-          formData.value.password.length >= 6
+      const validationErrors = ref({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+        password: '',
+        confirmPassword: '',
+      });
+
+      const formatPhoneInput = event => {
+        let value = event.target.value.replace(/[^0-9]/g, '');
+
+        value = value.substring(0, 10);
+
+        if (value.length >= 6) {
+          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+        } else if (value.length >= 3) {
+          value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+        }
+
+        formData.value.phone = value;
+      };
+
+      const validateField = (fieldName, value) => {
+        switch (fieldName) {
+          case 'firstName':
+            return value.trim().length < 2 ? 'First name must be at least 2 characters' : '';
+
+          case 'lastName':
+            return value.trim().length < 2 ? 'Last name must be at least 2 characters' : '';
+
+          case 'email':
+            return !value.trim() ? 'Email is required' : '';
+
+          case 'phone':
+            if (!value.trim()) return 'Phone number is required';
+
+            return value.length < 14 ? 'Phone number must be at least 10 digits' : '';
+
+          case 'address':
+            return value.trim().length < 8 ? 'Address must be at least 8 characters' : '';
+
+          case 'password':
+            if (!value) return 'Password is required';
+            if (value.length < 6) return 'Password must be at least 6 characters';
+            return '';
+
+          case 'confirmPassword':
+            if (!value) return 'Please confirm your password';
+            return value !== formData.value.password ? 'Passwords do not match' : '';
+
+          default:
+            return '';
+        }
+      };
+
+      Object.keys(formData.value).forEach(fieldName => {
+        watch(
+          () => formData.value[fieldName],
+          newValue => {
+            if (error.value) {
+              error.value = '';
+            }
+
+            validationErrors.value[fieldName] = validateField(fieldName, newValue);
+
+            if (fieldName === 'password' && formData.value.confirmPassword) {
+              validationErrors.value.confirmPassword = validateField('confirmPassword', formData.value.confirmPassword);
+            }
+          },
+          { immediate: false }
         );
+      });
+
+      const isFormValid = computed(() => {
+        const hasValues = Object.values(formData.value).every(value => value.trim());
+        const hasNoErrors = Object.values(validationErrors.value).every(error => !error);
+        return hasValues && hasNoErrors;
       });
 
       const handleRegister = async () => {
         error.value = '';
         success.value = '';
 
-        if (formData.value.password !== formData.value.confirmPassword) {
-          error.value = 'Passwords do not match';
+        let hasErrors = false;
+        Object.keys(formData.value).forEach(fieldName => {
+          const fieldError = validateField(fieldName, formData.value[fieldName]);
+          validationErrors.value[fieldName] = fieldError;
+
+          if (fieldError) hasErrors = true;
+        });
+
+        if (hasErrors) {
+          error.value = 'Please fix the errors above';
           return;
         }
-
         loading.value = true;
-
         try {
           const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
@@ -213,6 +329,8 @@
         success,
         isFormValid,
         handleRegister,
+        validationErrors,
+        formatPhoneInput,
       };
     },
   };
@@ -265,6 +383,23 @@
   border-radius: 5px;
   font-size: 1rem;
   transition: border-color 0.3s;
+}
+
+.form-input.error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.form-input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+.field-error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .form-input:focus {

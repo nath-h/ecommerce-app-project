@@ -46,7 +46,7 @@ router.get('/:code/validate', async (req, res) => {
 
     if (!coupon) {
       return res.status(404).json({
-        error: 'Invalid coupon code',
+        error: `Invalid coupon code: ${code.toUpperCase()}`,
       });
     }
 
@@ -78,7 +78,7 @@ router.get('/admin', async (req, res) => {
 
 router.post('/admin', async (req, res) => {
   try {
-    const { id, code, type, value, description, minOrder, maxDiscount, expiresAt, isActive } = req.body;
+    const { code, type, value, description, minOrder, maxDiscount, expiresAt, isActive } = req.body;
 
     if (!code || !type || !value) {
       return res.status(400).json({ error: 'Code, type, and value are required fields' });
@@ -91,6 +91,7 @@ router.post('/admin', async (req, res) => {
     if (existingCoupon) {
       return res.status(409).json({ error: 'This coupon already exists' });
     }
+
     const newCoupon = await prisma.coupon.create({
       data: {
         code: code.toUpperCase(),
@@ -99,7 +100,7 @@ router.post('/admin', async (req, res) => {
         description,
         minOrder: minOrder ? parseFloat(minOrder) : 0,
         maxDiscount: maxDiscount ? parseFloat(maxDiscount) : null,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        expiresAt: expiresAt ? new Date(expiresAt).toLocaleString('en-US').slice(0, 16) : null,
         isActive: Boolean(isActive),
       },
     });
@@ -170,11 +171,12 @@ router.put('/admin/:id', async (req, res) => {
         parseFloat(minOrder) !== parseFloat(existingCoupon.minOrder)
           ? { from: existingCoupon.minOrder, to: parseFloat(minOrder) }
           : undefined,
-      maxDiscount: (maxDiscount === null ? null : parseFloat(existingCoupon.maxDiscount))
-        ? { from: existingCoupon.maxDiscount, to: maxDiscount }
-        : undefined,
+      maxDiscount: { from: existingCoupon.maxDiscount, to: maxDiscount },
       expiresAt: (expiresAt === null ? null : existingCoupon.expiresAt)
-        ? { from: existingCoupon.expiresAt, to: expiresAt }
+        ? {
+            from: existingCoupon.expiresAt ? existingCoupon.expiresAt.toLocaleString('en-US').slice(0, 16) : null,
+            to: expiresAt ? expiresAt.toLocaleString('en-US').slice(0, 16) : null,
+          }
         : undefined,
       isActive: isActive !== existingCoupon.isActive ? { from: existingCoupon.isActive, to: isActive } : undefined,
     };

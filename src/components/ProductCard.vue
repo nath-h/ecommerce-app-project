@@ -97,7 +97,7 @@
   import { useEcommerceStore } from '@/stores/ecommerce';
 
   export default {
-    props: ['product', 'index'],
+    props: ['product'],
     setup(props) {
       const store = useEcommerceStore();
       const quantity = ref(0);
@@ -117,25 +117,17 @@
         errorMessage.value = '';
         successMessage.value = '';
 
-        const existingCartItem = store.cart.find(item => item.id === props.product.id);
+        const existingCartItem = store.cart.find(item => item.productId === props.product.id);
         const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0;
-
-        const availableToAdd = props.product.stock - quantity.value;
-        console.log(`Debug: Stock=${props.product.stock}, InCart=${currentCartQuantity}, Requesting=${quantity.value}`);
-
-        if (availableToAdd < 0) {
-          errorMessage.value = `Cannot add ${quantity.value} items. This item is out of stock.`;
-          quantity.value = 0;
-          return;
-        }
+        const totalRequestedQuantity = currentCartQuantity + quantity.value;
 
         if (props.product.stock <= 0) {
-          errorMessage.value = `Cannot add ${quantity.value} item(s). 
-        This item is out of stock. (${currentCartQuantity} already in cart.)`;
+          errorMessage.value = `This item is out of stock.`;
           quantity.value = 0;
           return;
         }
-        if (quantity.value > props.product.stock) {
+        if (totalRequestedQuantity > props.product.stock) {
+          const availableToAdd = props.product.stock - currentCartQuantity;
           errorMessage.value = `Cannot add ${quantity.value} item(s). 
         Only ${availableToAdd} more in stock. (${currentCartQuantity} already in cart)`;
           quantity.value = 0;
@@ -148,7 +140,9 @@
         const success = store.addToCart(props.product.id, quantity.value);
         if (success) {
           console.log(
-            `Successfully added ${quantity.value} item(s) to cart! Stock: ${props.product.stock} Available: ${availableToAdd} `
+            `Successfully added ${quantity.value} item(s) to cart! Stock: ${
+              props.product.stock
+            } Quantity in cart: ${totalRequestedQuantity} Available: ${props.product.stock - totalRequestedQuantity} `
           );
           errorMessage.value = '';
           successMessage.value = `Successfully added ${quantity.value} item(s) to cart!`;
