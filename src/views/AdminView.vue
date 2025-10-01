@@ -462,6 +462,7 @@
     minOrder: 0,
     maxDiscount: '',
     expiresAt: '',
+    originalExpiresAt: '',
     isActive: true,
   });
 
@@ -571,12 +572,29 @@
 
     try {
       const url = editingCouponId.value ? `/api/coupon/admin/${editingCouponId.value}` : '/api/coupon/admin';
+      const formExpiresAt = couponForm.expiresAt;
+      const originalExpiresAt = couponForm.originalExpiresAt;
+
       const formData = {
-        ...couponForm,
-        maxDiscount: parseFloat(couponForm.maxDiscount) === '' ? null : parseFloat(couponForm.maxDiscount),
-        minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
+        code: couponForm.code,
+        type: couponForm.type,
         value: parseFloat(couponForm.value),
+        description: couponForm.description,
+        minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
+        maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
+        isActive: couponForm.isActive,
       };
+
+      if (editingCouponId.value) {
+        const originalFormatted = originalExpiresAt ? new Date(originalExpiresAt).toISOString().slice(0, 16) : '';
+
+        if (formExpiresAt !== originalFormatted) {
+          formData.expiresAt = formExpiresAt ? new Date(formExpiresAt).toISOString() : null;
+        }
+      } else {
+        formData.expiresAt = formExpiresAt ? new Date(formExpiresAt).toISOString() : null;
+      }
+
       const response = await makeAuthenticatedRequest(url, {
         method: editingCouponId.value ? 'PUT' : 'POST',
         body: JSON.stringify(formData),
@@ -599,15 +617,23 @@
 
   const editCoupon = coupon => {
     editingCouponId.value = coupon.id;
+
+    let formattedDate = '';
+    if (coupon.expiresAt) {
+      const utcDate = new Date(coupon.expiresAt);
+      const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+      formattedDate = localDate.toISOString().slice(0, 16);
+    }
+
     Object.assign(couponForm, {
-      id: coupon.id,
       code: coupon.code,
       type: coupon.type,
       value: coupon.value,
       description: coupon.description || '',
       minOrder: coupon.minOrder || 0,
-      maxDiscount: parseFloat(coupon.maxDiscount) || null,
-      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleString('en-US').slice(0, 16) : '',
+      maxDiscount: coupon.maxDiscount ?? '',
+      expiresAt: formattedDate,
+      originalExpiresAt: coupon.expiresAt || '',
       isActive: coupon.isActive,
     });
   };
@@ -626,6 +652,7 @@
       description: '',
       minOrder: 0,
       maxDiscount: '',
+      originalExpiresAt: '',
       expiresAt: '',
       isActive: true,
     });
@@ -749,7 +776,7 @@
 
   const formatDate = dateString => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
+      year: '2-digit',
       month: 'numeric',
       day: 'numeric',
       hour: 'numeric',
@@ -775,6 +802,9 @@
       if (parsed.changes) {
         return Object.entries(parsed.changes)
           .map(([field, { from, to }]) => {
+            if (field === 'expiresAt') {
+              return `<strong>Expires At: </strong>${formatDate(from)} → ${formatDate(to)}`;
+            }
             return `<strong>${field}: </strong>${from}→${to}`;
           })
           .join('<br>');
@@ -786,7 +816,18 @@
 
       if (parsed.code && parsed.type) {
         const value = parsed.type === 'PERCENTAGE' ? `${parsed.value}%` : `$${parsed.value}`;
-        return `<strong>Created coupon: </strong>${parsed.code}<br> <strong>Type: </strong>${parsed.type}<br><strong>Value: </strong>${value}`;
+        let expirationText;
+
+        if (parsed.expiresAt === null || parsed.expiresAt === undefined) {
+          expirationText = 'Never';
+        } else {
+          try {
+            expirationText = formatDate(parsed.expiresAt);
+          } catch (error) {
+            expirationText = 'Never';
+          }
+        }
+        return `<strong>Created coupon: </strong>${parsed.code}<br> <strong>Type: </strong>${parsed.type}<br><strong>Value: </strong>${value}<br> <strong>Expires:</strong> ${expirationText}<br> <strong>Active:</strong> ${parsed.isActive}`;
       }
       return JSON.stringify(parsed, null, 2).replace(/\n/g, '<br>');
     } catch (error) {

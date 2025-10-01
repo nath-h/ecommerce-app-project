@@ -167,7 +167,7 @@
             class="form-input"
             :placeholder="authStore.user ? '' : 'Enter your phone number'"
             @input="formatPhoneInput"
-            maxlength="14" />
+            minlength="14" />
         </div>
 
         <div class="form-group">

@@ -22,6 +22,7 @@ const productRoutes = require('./routes/products');
 const ordersRoutes = require('./routes/orders');
 const { router: adminRouter } = require('./routes/admin');
 const couponRoutes = require('./routes/coupon');
+require('./jobs');
 
 app.use('/api/admin', adminRouter);
 app.use('/api/coupon', couponRoutes);

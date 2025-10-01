@@ -36,17 +36,30 @@ router.get('/:code/validate', async (req, res) => {
     const { code } = req.params;
     const { subtotal } = req.query;
 
-    const coupon = await prisma.coupon.findFirst({
+    let coupon = await prisma.coupon.findFirst({
       where: {
         code: code.toUpperCase(),
-        isActive: true,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
     });
-
     if (!coupon) {
       return res.status(404).json({
         error: `Invalid coupon code: ${code.toUpperCase()}`,
+      });
+    }
+
+    if (!coupon.isActive) {
+      return res.status(400).json({
+        error: 'This coupon is no longer active.',
+      });
+    }
+
+    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+      coupon = await prisma.coupon.update({
+        where: { id: coupon.id },
+        data: { isActive: false },
+      });
+      return res.status(400).json({
+        error: 'This coupon has expired and is no longer valid.',
       });
     }
 
@@ -58,7 +71,7 @@ router.get('/:code/validate', async (req, res) => {
     res.json(coupon);
   } catch (error) {
     console.error('Error validating coupon:', error);
-    res.status(500).json({ error: 'Internal sever error while valildating coupon' });
+    res.status(500).json({ error: 'Internal server error while valildating coupon' });
   }
 });
 
@@ -100,7 +113,7 @@ router.post('/admin', async (req, res) => {
         description,
         minOrder: minOrder ? parseFloat(minOrder) : 0,
         maxDiscount: maxDiscount ? parseFloat(maxDiscount) : null,
-        expiresAt: expiresAt ? new Date(expiresAt).toLocaleString('en-US').slice(0, 16) : null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
         isActive: Boolean(isActive),
       },
     });
@@ -108,6 +121,8 @@ router.post('/admin', async (req, res) => {
       code: newCoupon.code,
       type: newCoupon.type,
       value: newCoupon.value,
+      expiresAt: newCoupon.expiresAt || null,
+      isActive: newCoupon.isActive,
     });
     res.status(201).json({
       message: 'Coupon created successfully',
@@ -121,10 +136,11 @@ router.post('/admin', async (req, res) => {
 
 router.put('/admin/:id', async (req, res) => {
   try {
-    const { id, code, type, value, description, minOrder, maxDiscount, expiresAt, isActive } = req.body;
+    const couponId = req.params.id;
+    const { code, type, value, description, minOrder, maxDiscount, expiresAt, isActive } = req.body;
     const existingCoupon = await prisma.coupon.findUnique({
       where: {
-        id: req.body.id,
+        id: couponId,
       },
     });
     if (!existingCoupon) {
@@ -135,7 +151,7 @@ router.put('/admin/:id', async (req, res) => {
       const codeExists = await prisma.coupon.findFirst({
         where: {
           code: code.toUpperCase(),
-          id: { not: id },
+          id: { not: couponId },
         },
       });
 
@@ -145,22 +161,20 @@ router.put('/admin/:id', async (req, res) => {
     }
 
     const updatedCoupon = await prisma.coupon.update({
-      where: { id: id },
+      where: { id: couponId },
       data: {
-        id,
         code: code ? code.toUpperCase() : undefined,
         type,
         value: value ? parseFloat(value) : undefined,
         description,
         minOrder: minOrder ? parseFloat(minOrder) : 0,
         maxDiscount: maxDiscount ? parseFloat(maxDiscount) : null,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        ...(expiresAt !== undefined && { expiresAt: expiresAt ? new Date(expiresAt) : null }),
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
       },
     });
 
     const changes = {
-      id: id !== existingCoupon.id ? { from: existingCoupon.id, to: id } : undefined,
       code: code !== existingCoupon.code ? { from: existingCoupon.code, to: code } : undefined,
       type: type !== existingCoupon.type ? { from: existingCoupon.type, to: type } : undefined,
       value:
@@ -171,23 +185,44 @@ router.put('/admin/:id', async (req, res) => {
         parseFloat(minOrder) !== parseFloat(existingCoupon.minOrder)
           ? { from: existingCoupon.minOrder, to: parseFloat(minOrder) }
           : undefined,
-      maxDiscount: { from: existingCoupon.maxDiscount, to: maxDiscount },
-      expiresAt: (expiresAt === null ? null : existingCoupon.expiresAt)
-        ? {
-            from: existingCoupon.expiresAt ? existingCoupon.expiresAt.toLocaleString('en-US').slice(0, 16) : null,
-            to: expiresAt ? expiresAt.toLocaleString('en-US').slice(0, 16) : null,
-          }
-        : undefined,
+      maxDiscount: (() => {
+        if (maxDiscount === undefined) return undefined;
+
+        if (String(maxDiscount) !== String(existingCoupon.maxDiscount)) {
+          return { from: existingCoupon.maxDiscount, to: maxDiscount };
+        }
+        return undefined;
+      })(),
+
+      expiresAt: (() => {
+        if (expiresAt === undefined) return undefined;
+
+        const oldTime = existingCoupon.expiresAt ? existingCoupon.expiresAt.getTime() : null;
+        const newTime = expiresAt ? new Date(expiresAt).getTime() : null;
+
+        if (oldTime !== newTime) {
+          return {
+            from: existingCoupon.expiresAt ? existingCoupon.expiresAt.toISOString() : null,
+            to: expiresAt ? new Date(expiresAt).toISOString() : null,
+          };
+        }
+        return undefined;
+      })(),
       isActive: isActive !== existingCoupon.isActive ? { from: existingCoupon.isActive, to: isActive } : undefined,
     };
 
     const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
 
-    await logAdminAction(req.user.userId, 'UPDATED_COUPON', 'COUPON', id.toString(), {
-      changes: filteredChanges,
-    });
+    if (Object.keys(filteredChanges).length > 0) {
+      await logAdminAction(req.user.userId, 'UPDATED_COUPON', 'COUPON', couponId, {
+        changes: filteredChanges,
+      });
+    }
     res.json({
-      message: 'Coupon updated successfully',
+      message:
+        Object.keys(filteredChanges).length <= 0
+          ? 'No fields were changed, therefore no changes were made'
+          : 'Coupon updated successfully',
       coupon: updatedCoupon,
     });
   } catch (error) {

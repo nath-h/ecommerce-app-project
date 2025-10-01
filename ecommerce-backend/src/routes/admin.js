@@ -242,13 +242,17 @@ router.put('/users/:id', async (req, res) => {
       },
     });
 
-    await logAdminAction(req.user.userId, actionType, 'USER', userId, { changes });
+    if (Object.keys(updateData).length > 0) {
+      await logAdminAction(req.user.userId, 'UPDATED_USER', 'USER', userId, { changes });
+    }
     res.json({
       message:
         actionType === 'DISABLED_USER'
           ? 'User disabled successfully'
           : actionType === 'REACTIVATED_USER'
           ? 'User reactivated successfully'
+          : Object.keys(updateData).length <= 0
+          ? 'No fields were changed, therefore no changes were made'
           : 'User updated successfully',
       user: updatedUser,
     });
