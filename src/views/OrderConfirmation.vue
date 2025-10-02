@@ -141,6 +141,17 @@
         </table>
       </div>
 
+      <div
+        v-if="cancelError"
+        class="error-message">
+        <p>{{ cancelError }}</p>
+        <button
+          @click="cancelError = null"
+          class="close-error">
+          x
+        </button>
+      </div>
+
       <!-- Action Buttons -->
       <div class="actions-section">
         <router-link
@@ -220,7 +231,7 @@
 
 <script>
   import { ref, computed, onMounted } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { useRoute } from 'vue-router';
   import { useEcommerceStore } from '@/stores/ecommerce';
   import { useAuthStore } from '@/stores/authStore';
 
@@ -228,13 +239,13 @@
     name: 'OrderConfirmation',
     setup() {
       const route = useRoute();
-      const router = useRouter();
       const ecommerceStore = useEcommerceStore();
       const authStore = useAuthStore();
 
       const order = ref(null);
       const loading = ref(true);
       const error = ref(null);
+      const cancelError = ref(null);
       const isCancelling = ref(false);
 
       const canCancelOrder = computed(() => {
@@ -272,12 +283,14 @@
         if (!order.value || isCancelling.value) return;
 
         isCancelling.value = true;
+        cancelError.value = null;
         try {
           await ecommerceStore.cancelOrder(order.value.id);
           order.value.status = 'CANCELLED';
         } catch (err) {
           console.error('Failed to cancel order:', err);
-          alert('Failed to cancel order. Please try again.');
+          cancelError.value = 'Failed to cancel order. Order has already been cancelled.';
+          order.value.status = 'CANCELLED';
         } finally {
           isCancelling.value = false;
         }
@@ -324,6 +337,7 @@
         order,
         loading,
         error,
+        cancelError,
         isCancelling,
         canCancelOrder,
         authStore,
@@ -348,6 +362,44 @@
 .error-container {
   text-align: center;
   padding: 50px 20px;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.error-message p {
+  margin: 0;
+  flex: 1;
+}
+
+.close-error {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #721c24;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-error:hover {
+  background-color: rgba(114, 28, 36, 0.1);
+  border-radius: 50%;
 }
 
 .confirmation-container {
