@@ -145,14 +145,9 @@
     </div>
 
     <div
-      v-if="actionError"
-      class="error-toast">
-      <p>{{ actionError }}</p>
-      <button
-        @click="actionError = null"
-        class="close-error">
-        x
-      </button>
+      v-if="message.show"
+      :class="['toast', `toast-${message.type}`]">
+      {{ message.text }}
     </div>
   </main>
 </template>
@@ -160,7 +155,7 @@
 <script>
   import { useEcommerceStore } from '@/stores/ecommerce';
   import { useAuthStore } from '@/stores/authStore';
-  import { ref, onMounted, computed } from 'vue';
+  import { ref, onMounted, computed, reactive } from 'vue';
 
   export default {
     name: 'PastOrders',
@@ -172,13 +167,18 @@
       const loading = ref(true);
       const loadingMore = ref(false);
       const error = ref(null);
-      const actionError = ref(null);
       const cancellingOrders = ref([]);
       const pagination = ref({
         page: 1,
         limit: 10,
         total: 0,
         pages: 0,
+      });
+      const message = reactive({
+        show: false,
+        text: '',
+        type: 'success',
+        timeoutId: null,
       });
 
       const totalOrders = computed(() => pagination.value.total);
@@ -202,9 +202,9 @@
           }
 
           pagination.value = data.pagination;
-        } catch (err) {
-          console.error('Error fetching orders:', err);
-          error.value = err.message || 'Failed to load orders';
+        } catch (error) {
+          console.error('Error fetching orders:', error);
+          error.value = error.message || 'Failed to load orders';
         } finally {
           loading.value = false;
           loadingMore.value = false;
@@ -233,7 +233,7 @@
       const addToCart = (productId, quantity) => {
         const success = ecommerceStore.addToCart(productId, quantity);
         if (!success) {
-          actionError.value = 'Unable to add item to cart. Check stock availability or try again later.';
+          showMessage('Unable to add item to cart. Check stock availability.', 'error');
         }
       };
 
@@ -247,9 +247,13 @@
         });
 
         if (failedItems.length > 0) {
-          actionError.value = `Could not add some items to cart: ${failedItems.join(
-            ', '
-          )}. Check stock availability or try again.`;
+          // message.value = `Could not add some items to cart: ${failedItems.join(
+          //   ', '
+          //   )}. Check stock availability or try again.`;
+          showMessage(
+            `Could not add some items to cart: ${failedItems.join(', ')}. Check stock availability.`,
+            'error'
+          );
         }
       };
 
@@ -257,9 +261,18 @@
         return order.discount && parseFloat(order.discount) > 0;
       };
 
-      const hasItemDiscount = item => {
-        const tolerance = 0.01;
-        return Math.abs(item.originalTotal - item.discountedTotal) > tolerance;
+      const showMessage = (text, type = 'success') => {
+        if (message.timeoutId) {
+          clearTimeout(message.timeoutId);
+        }
+
+        message.show = true;
+        message.text = text;
+        message.type = type;
+        message.timeoutId = setTimeout(() => {
+          message.show = false;
+          message.timeoutId = null;
+        }, 3000);
       };
 
       const canCancelOrder = order => {
@@ -267,20 +280,20 @@
       };
 
       const cancelOrder = async orderId => {
-        if (cancellingOrders.value.includes(orderid)) return;
+        if (cancellingOrders.value.includes(orderId)) return;
 
         cancellingOrders.value.push(orderId);
 
         try {
           await ecommerceStore.cancelOrder(orderId);
 
-          const orderindex = orders.value.findIndex(o => o.id === order.id);
-          if (orderIndex !== -1) {
-            orders.value[orderIndex].status = 'CANCELLED';
+          const order = orders.value.find(o => o.id === orderId);
+          if (order) {
+            order.status = 'CANCELLED';
           }
-        } catch (err) {
-          console.error('Failed to cancel order:', err);
-          actionError.value = err.message || 'Failed to cancel order';
+          showMessage('Order cancelled successfully', 'success');
+        } catch (error) {
+          showMessage(error.message, 'error');
         } finally {
           cancellingOrders.value = cancellingOrders.value.filter(id => id !== orderId);
         }
@@ -300,7 +313,7 @@
         loading,
         loadingMore,
         error,
-        actionError,
+        message,
         cancellingOrders,
         pagination,
         totalOrders,
@@ -503,25 +516,27 @@
   transform: none;
 }
 
-.error-toast {
+.toast {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 1rem;
+  right: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.toast-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.toast-error {
   background-color: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
-  border-radius: 4px;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 1000;
-  max-width: 400px;
-}
-
-.error-toast p {
-  margin: 0;
-  flex: 1;
 }
 
 .close-error {

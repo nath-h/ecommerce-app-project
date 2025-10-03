@@ -202,6 +202,10 @@ export const useAuthStore = defineStore('auth', {
     showExpirationWarning() {
       if (typeof window !== 'undefined') {
         const timeRemaining = this.timeUntilExpiration;
+        console.log('Warning triggered - timeRemaining:', timeRemaining, 'seconds:', Math.floor(timeRemaining / 1000));
+        console.log('Login time:', new Date(this.loginTime));
+        console.log('Current time:', new Date());
+
         window.dispatchEvent(
           new CustomEvent('tokenExpirationWarning', {
             detail: {

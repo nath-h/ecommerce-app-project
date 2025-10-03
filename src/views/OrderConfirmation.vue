@@ -161,7 +161,7 @@
         </router-link>
         <router-link
           v-if="authStore.user"
-          to="/orders"
+          to="/past-orders"
           class="btn btn-outline">
           View Order History
         </router-link>

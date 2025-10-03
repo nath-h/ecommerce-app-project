@@ -1,439 +1,441 @@
 <template>
-  <div class="admin-dashboard">
-    <header class="admin-header">
-      <h1>Admin Dashboard</h1>
-      <p>Manage users and monitor system activities</p>
-    </header>
+  <main class="wrapper">
+    <div class="admin-dashboard">
+      <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p>Manage users and monitor system activities</p>
+      </header>
 
-    <div
-      v-if="!authStore.isAdmin"
-      class="access-denied">
-      <h2>Access denied</h2>
-      <p>You need administrator privileges to access this page.</p>
-    </div>
+      <div
+        v-if="!authStore.isAdmin"
+        class="access-denied">
+        <h2>Access denied</h2>
+        <p>You need administrator privileges to access this page.</p>
+      </div>
 
-    <div
-      v-else
-      class="admin-content">
-      <nav class="tab-nav">
-        <button
-          :class="['tab-btn', { active: activeTab === 'users' }]"
-          @click="setActiveTab('users')">
-          User Management
-        </button>
-        <button
-          :class="['tab-btn', { active: activeTab === 'coupons' }]"
-          @click="setActiveTab('coupons')">
-          Coupon Management
-        </button>
-        <button
-          :class="['tab-btn', { active: activeTab === 'actions' }]"
-          @click="setActiveTab('actions')">
-          Admin Actions Log
-        </button>
-      </nav>
+      <div
+        v-else
+        class="admin-content">
+        <nav class="tab-nav">
+          <button
+            :class="['tab-btn', { active: activeTab === 'users' }]"
+            @click="setActiveTab('users')">
+            User Management
+          </button>
+          <button
+            :class="['tab-btn', { active: activeTab === 'coupons' }]"
+            @click="setActiveTab('coupons')">
+            Coupon Management
+          </button>
+          <button
+            :class="['tab-btn', { active: activeTab === 'actions' }]"
+            @click="setActiveTab('actions')">
+            Admin Actions Log
+          </button>
+        </nav>
 
-      <section
-        v-if="activeTab === 'users'"
-        class="tab-content">
-        <div class="form-section">
-          <h2>{{ editMode ? 'Edit User' : 'Add new user' }}</h2>
+        <section
+          v-if="activeTab === 'users'"
+          class="tab-content">
+          <div class="form-section">
+            <h2>{{ editMode ? 'Edit User' : 'Add new user' }}</h2>
 
-          <form
-            @submit.prevent="handleUserSubmit"
-            class="user-form">
-            <div class="form-grid">
-              <div class="form-field">
-                <label>First Name *</label>
-                <input
-                  v-model="userForm.firstName"
-                  type="text"
-                  required
-                  :disabled="isLoading" />
+            <form
+              @submit.prevent="handleUserSubmit"
+              class="user-form">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>First Name *</label>
+                  <input
+                    v-model="userForm.firstName"
+                    type="text"
+                    required
+                    :disabled="isLoading" />
+                </div>
+
+                <div class="form-field">
+                  <label>Last Name *</label>
+                  <input
+                    v-model="userForm.lastName"
+                    type="text"
+                    required
+                    :disabled="isLoading" />
+                </div>
+
+                <div class="form-field">
+                  <label>Email *</label>
+                  <input
+                    v-model="userForm.email"
+                    type="email"
+                    required
+                    :disabled="isLoading" />
+                </div>
+
+                <div class="form-field">
+                  <label>Phone *</label>
+                  <input
+                    v-model="userForm.phone"
+                    type="tel"
+                    required
+                    :disabled="isLoading" />
+                </div>
+
+                <div class="form-field">
+                  <label>Address *</label>
+                  <input
+                    v-model="userForm.address"
+                    type="text"
+                    required
+                    :disabled="isLoading" />
+                </div>
+
+                <div
+                  v-if="!editMode"
+                  class="form-field">
+                  <label>Password *</label>
+                  <input
+                    v-model="userForm.password"
+                    type="password"
+                    required
+                    minlength="6"
+                    :disabled="isLoading" />
+                </div>
               </div>
 
-              <div class="form-field">
-                <label>Last Name *</label>
-                <input
-                  v-model="userForm.lastName"
-                  type="text"
-                  required
-                  :disabled="isLoading" />
+              <div class="form-checkboxes">
+                <label class="checkbox-label">
+                  <input
+                    v-model="userForm.isAdmin"
+                    type="checkbox"
+                    :disabled="isLoading" />
+                  <span>Administrator</span>
+                </label>
+
+                <label
+                  v-if="editMode"
+                  class="checkbox-label">
+                  <input
+                    v-model="userForm.isActive"
+                    type="checkbox"
+                    :disabled="isLoading" />
+                  <span>Active</span>
+                </label>
               </div>
 
-              <div class="form-field">
-                <label>Email *</label>
-                <input
-                  v-model="userForm.email"
-                  type="email"
-                  required
-                  :disabled="isLoading" />
-              </div>
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  :disabled="isLoading"
+                  class="btn btn-primary">
+                  {{ isLoading ? 'Saving...' : editMode ? 'Update User' : 'Create User' }}
+                </button>
 
-              <div class="form-field">
-                <label>Phone *</label>
-                <input
-                  v-model="userForm.phone"
-                  type="tel"
-                  required
-                  :disabled="isLoading" />
+                <button
+                  v-if="editMode"
+                  type="button"
+                  @click="resetUserForm"
+                  :disabled="isLoading"
+                  class="btn btn-secondary">
+                  Cancel
+                </button>
               </div>
+            </form>
+          </div>
 
-              <div class="form-field">
-                <label>Address *</label>
-                <input
-                  v-model="userForm.address"
-                  type="text"
-                  required
-                  :disabled="isLoading" />
-              </div>
-
-              <div
-                v-if="!editMode"
-                class="form-field">
-                <label>Password *</label>
-                <input
-                  v-model="userForm.password"
-                  type="password"
-                  required
-                  minlength="6"
-                  :disabled="isLoading" />
-              </div>
+          <div class="users-section">
+            <h2>All Users</h2>
+            <div
+              v-if="loadingUsers"
+              class="loading-state">
+              Loading users...
             </div>
 
-            <div class="form-checkboxes">
-              <label class="checkbox-label">
-                <input
-                  v-model="userForm.isAdmin"
-                  type="checkbox"
-                  :disabled="isLoading" />
-                <span>Administrator</span>
-              </label>
+            <div
+              v-else
+              class="table-wrapper">
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="user in users"
+                    :key="user.id">
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.firstName }} {{ user.lastName }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone }}</td>
+                    <td>
+                      <span :class="['badge', user.isActive ? 'badge-active' : 'badge-inactive']">
+                        {{ user.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span :class="['badge', user.isAdmin ? 'badge-admin' : 'badge-user']">
+                        {{ user.isAdmin ? 'Admin' : 'User' }}
+                      </span>
+                    </td>
+                    <td>{{ formatDate(user.createdAt) }}</td>
+                    <td>{{ formatDate(user.updatedAt) }}</td>
+                    <td>
+                      <button
+                        @click="editUser(user)"
+                        :disabled="isLoading"
+                        class="btn btn-sb btn-outline">
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-              <label
-                v-if="editMode"
-                class="checkbox-label">
-                <input
-                  v-model="userForm.isActive"
-                  type="checkbox"
-                  :disabled="isLoading" />
-                <span>Active</span>
-              </label>
+        <section
+          v-if="activeTab === 'coupons'"
+          class="tab-content">
+          <div class="form-section">
+            <h2>{{ editingCouponId ? 'Edit Coupon' : 'Add new coupon' }}</h2>
+
+            <form
+              @submit.prevent="handleCouponSubmit"
+              class="coupon-form">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>Code *</label>
+                  <input
+                    v-model="couponForm.code"
+                    type="text"
+                    required
+                    :disabled="isLoading"
+                    placeholder="Coupon Code" />
+                </div>
+
+                <div class="form-field">
+                  <label>Type *</label>
+                  <select
+                    v-model="couponForm.type"
+                    required
+                    :disabled="isLoading">
+                    <option value="PERCENTAGE">Percentage</option>
+                    <option value="FIXED">Fixed Amount</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Value *</label>
+                  <input
+                    v-model="couponForm.value"
+                    type="number"
+                    step="0.01"
+                    required
+                    :disabled="isLoading"
+                    :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
+                </div>
+
+                <div class="form-field">
+                  <label>Minimum Order Amount</label>
+                  <input
+                    v-model="couponForm.minOrder"
+                    type="number"
+                    step="0.01"
+                    :disabled="isLoading"
+                    placeholder="50.00" />
+                </div>
+
+                <div class="form-field">
+                  <label>Maximum Discount</label>
+                  <input
+                    v-model="couponForm.maxDiscount"
+                    type="number"
+                    step="0.01"
+                    :disabled="isLoading"
+                    placeholder="100.00" />
+                </div>
+
+                <div class="form-field">
+                  <label>Expires At (local time)</label>
+                  <input
+                    v-model="couponForm.expiresAt"
+                    type="datetime-local"
+                    :disabled="isLoading" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Description</label>
+                <textarea
+                  v-model="couponForm.description"
+                  :disabled="isLoading"
+                  rows="3"
+                  placeholder="Enter coupon description..."></textarea>
+              </div>
+
+              <div class="form-checkboxes">
+                <label class="checkbox-label">
+                  <input
+                    v-model="couponForm.isActive"
+                    type="checkbox"
+                    :disabled="isLoading" />
+                  <span>Active</span>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  :disabled="isLoading"
+                  class="btn btn-primary">
+                  {{ isLoading ? 'Saving...' : editingCouponId ? 'Update coupon' : 'Create coupon' }}
+                </button>
+
+                <button
+                  v-if="editingCouponId"
+                  type="button"
+                  @click="resetCouponForm"
+                  :disabled="isLoading"
+                  class="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="coupons-section">
+            <h2>All coupons</h2>
+            <div
+              v-if="loadingCoupons"
+              class="loading-state">
+              Loading coupons...
             </div>
 
-            <div class="form-actions">
-              <button
-                type="submit"
-                :disabled="isLoading"
-                class="btn btn-primary">
-                {{ isLoading ? 'Saving...' : editMode ? 'Update User' : 'Create User' }}
-              </button>
-
-              <button
-                v-if="editMode"
-                type="button"
-                @click="cancelEdit"
-                :disabled="isLoading"
-                class="btn btn-secondary">
-                Cancel
-              </button>
+            <div
+              v-else
+              class="table-wrapper">
+              <table class="coupons-table">
+                <thead>
+                  <tr>
+                    <th>Coupon ID</th>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Min Order Amount</th>
+                    <th>Max Discount</th>
+                    <th>Status</th>
+                    <th>Expires At (local time)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="coupon in coupons"
+                    :key="coupon.id">
+                    <td>{{ coupon.id }}</td>
+                    <td>{{ coupon.code }}</td>
+                    <td>{{ formatCouponType(coupon.type) }}</td>
+                    <td>{{ formatCouponValue(coupon) }}</td>
+                    <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
+                    <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
+                    <td>
+                      <span
+                        :class="[
+                          'badge',
+                          {
+                            'badge-active': coupon.isActive && !isCouponExpired(coupon.expiresAt),
+                            'badge-inactive': !coupon.isActive,
+                            'badge-expired': isCouponExpired(coupon.expiresAt),
+                          },
+                        ]">
+                        {{ isCouponExpired(coupon.expiresAt) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td>{{ coupon.expiresAt ? formatDate(coupon.expiresAt) : 'Never' }}</td>
+                    <td>
+                      <button
+                        @click="editCoupon(coupon)"
+                        :disabled="isLoading"
+                        class="btn btn-sb btn-outline">
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </form>
-        </div>
+          </div>
+        </section>
 
-        <div class="users-section">
-          <h2>All Users</h2>
+        <section
+          v-if="activeTab === 'actions'"
+          class="tab-content">
+          <h2>Admin Actions Log</h2>
           <div
-            v-if="loadingUsers"
+            v-if="loadingActions"
             class="loading-state">
-            Loading users...
+            Loading actions...
+          </div>
+
+          <div
+            v-else-if="adminActions.length === 0"
+            class="empty-state">
+            No admin actions recorded
           </div>
 
           <div
             v-else
             class="table-wrapper">
-            <table class="users-table">
+            <table class="actions-table">
               <thead>
                 <tr>
-                  <th>User ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>Role</th>
-                  <th>Created</th>
-                  <th>Updated</th>
-                  <th>Actions</th>
+                  <th>Date</th>
+                  <th>Admin</th>
+                  <th>Admin UserID</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Entity ID</th>
+                  <th>Details</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
-                  v-for="user in users"
-                  :key="user.id">
-                  <td>{{ user.id }}</td>
-                  <td>{{ user.firstName }} {{ user.lastName }}</td>
-                  <td>{{ user.email }}</td>
-                  <td>{{ user.phone }}</td>
+                  v-for="action in adminActions"
+                  :key="action.id">
+                  <td>{{ formatDate(action.createdAt) }}</td>
+                  <td>{{ action.admin.firstName }} {{ action.admin.lastName }}</td>
+                  <td>{{ action.admin.id }}</td>
                   <td>
-                    <span :class="['badge', user.isActive ? 'badge-active' : 'badge-inactive']">
-                      {{ user.isActive ? 'Active' : 'Inactive' }}
+                    <span :class="['badge', getBadgeClass(action.action)]">
+                      {{ formatActionType(action.action) }}
                     </span>
                   </td>
-                  <td>
-                    <span :class="['badge', user.isAdmin ? 'badge-admin' : 'badge-user']">
-                      {{ user.isAdmin ? 'Admin' : 'User' }}
-                    </span>
-                  </td>
-                  <td>{{ formatDate(user.createdAt) }}</td>
-                  <td>{{ formatDate(user.updatedAt) }}</td>
-                  <td>
-                    <button
-                      @click="editUser(user)"
-                      :disabled="isLoading"
-                      class="btn btn-sb btn-outline">
-                      Edit
-                    </button>
-                  </td>
+                  <td>{{ action.entityType }}</td>
+                  <td>{{ action.entityId }}</td>
+                  <td v-html="formatActionDetails(action.details)"></td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <section
-        v-if="activeTab === 'coupons'"
-        class="tab-content">
-        <div class="form-section">
-          <h2>{{ editingCouponId ? 'Edit Coupon' : 'Add new coupon' }}</h2>
-
-          <form
-            @submit.prevent="handleCouponSubmit"
-            class="coupon-form">
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Code *</label>
-                <input
-                  v-model="couponForm.code"
-                  type="text"
-                  required
-                  :disabled="isLoading"
-                  placeholder="Coupon Code" />
-              </div>
-
-              <div class="form-field">
-                <label>Type *</label>
-                <select
-                  v-model="couponForm.type"
-                  required
-                  :disabled="isLoading">
-                  <option value="PERCENTAGE">Percentage</option>
-                  <option value="FIXED">Fixed Amount</option>
-                </select>
-              </div>
-
-              <div class="form-field">
-                <label>Value *</label>
-                <input
-                  v-model="couponForm.value"
-                  type="number"
-                  step="0.01"
-                  required
-                  :disabled="isLoading"
-                  :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
-              </div>
-
-              <div class="form-field">
-                <label>Minimum Order Amount</label>
-                <input
-                  v-model="couponForm.minOrder"
-                  type="number"
-                  step="0.01"
-                  :disabled="isLoading"
-                  placeholder="50.00" />
-              </div>
-
-              <div class="form-field">
-                <label>Maximum Discount</label>
-                <input
-                  v-model="couponForm.maxDiscount"
-                  type="number"
-                  step="0.01"
-                  :disabled="isLoading"
-                  placeholder="100.00" />
-              </div>
-
-              <div class="form-field">
-                <label>Expires At</label>
-                <input
-                  v-model="couponForm.expiresAt"
-                  type="datetime-local"
-                  :disabled="isLoading" />
-              </div>
-            </div>
-
-            <div class="form-field full-width">
-              <label>Description</label>
-              <textarea
-                v-model="couponForm.description"
-                :disabled="isLoading"
-                rows="3"
-                placeholder="Enter coupon description..."></textarea>
-            </div>
-
-            <div class="form-checkboxes">
-              <label class="checkbox-label">
-                <input
-                  v-model="couponForm.isActive"
-                  type="checkbox"
-                  :disabled="isLoading" />
-                <span>Active</span>
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button
-                type="submit"
-                :disabled="isLoading"
-                class="btn btn-primary">
-                {{ isLoading ? 'Saving...' : editingCouponId ? 'Update coupon' : 'Create coupon' }}
-              </button>
-
-              <button
-                v-if="editingCouponId"
-                type="button"
-                @click="cancelCouponEdit"
-                :disabled="isLoading"
-                class="btn btn-secondary">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div class="coupons-section">
-          <h2>All coupons</h2>
-          <div
-            v-if="loadingCoupons"
-            class="loading-state">
-            Loading coupons...
-          </div>
-
-          <div
-            v-else
-            class="table-wrapper">
-            <table class="coupons-table">
-              <thead>
-                <tr>
-                  <th>Coupon ID</th>
-                  <th>Code</th>
-                  <th>Type</th>
-                  <th>Value</th>
-                  <th>Min Order Amount</th>
-                  <th>Max Discount</th>
-                  <th>Status</th>
-                  <th>Expires At</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="coupon in coupons"
-                  :key="coupon.id">
-                  <td>{{ coupon.id }}</td>
-                  <td>{{ coupon.code }}</td>
-                  <td>{{ formatCouponType(coupon.type) }}</td>
-                  <td>{{ formatCouponValue(coupon) }}</td>
-                  <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
-                  <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
-                  <td>
-                    <span
-                      :class="[
-                        'badge',
-                        {
-                          'badge-active': coupon.isActive && !isCouponExpired(coupon.expiresAt),
-                          'badge-inactive': !coupon.isActive,
-                          'badge-expired': isCouponExpired(coupon.expiresAt),
-                        },
-                      ]">
-                      {{ isCouponExpired(coupon.expiresAt) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive' }}
-                    </span>
-                  </td>
-                  <td>{{ coupon.expiresAt ? formatDate(coupon.expiresAt) : 'Never' }}</td>
-                  <td>
-                    <button
-                      @click="editCoupon(coupon)"
-                      :disabled="isLoading"
-                      class="btn btn-sb btn-outline">
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section
-        v-if="activeTab === 'actions'"
-        class="tab-content">
-        <h2>Admin Actions Log</h2>
-        <div
-          v-if="loadingActions"
-          class="loading-state">
-          Loading actions...
-        </div>
-
-        <div
-          v-else-if="adminActions.length === 0"
-          class="empty-state">
-          No admin actions recorded
-        </div>
-
-        <div
-          v-else
-          class="table-wrapper">
-          <table class="actions-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Admin</th>
-                <th>Admin UserID</th>
-                <th>Action</th>
-                <th>Entity</th>
-                <th>Entity ID</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="action in adminActions"
-                :key="action.id">
-                <td>{{ formatDate(action.createdAt) }}</td>
-                <td>{{ action.admin.firstName }} {{ action.admin.lastName }}</td>
-                <td>{{ action.admin.id }}</td>
-                <td>
-                  <span :class="['badge', getBadgeClass(action.action)]">
-                    {{ formatActionType(action.action) }}
-                  </span>
-                </td>
-                <td>{{ action.entityType }}</td>
-                <td>{{ action.entityId }}</td>
-                <td v-html="formatActionDetails(action.details)"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div
+        v-if="message.show"
+        :class="['toast', `toast-${message.type}`]">
+        {{ message.text }}
+      </div>
     </div>
-
-    <div
-      v-if="message.show"
-      :class="['toast', `toast-${message.type}`]">
-      {{ message.text }}
-    </div>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -462,7 +464,6 @@
     minOrder: 0,
     maxDiscount: '',
     expiresAt: '',
-    originalExpiresAt: '',
     isActive: true,
   });
 
@@ -572,8 +573,6 @@
 
     try {
       const url = editingCouponId.value ? `/api/coupon/admin/${editingCouponId.value}` : '/api/coupon/admin';
-      const formExpiresAt = couponForm.expiresAt;
-      const originalExpiresAt = couponForm.originalExpiresAt;
 
       const formData = {
         code: couponForm.code,
@@ -583,17 +582,8 @@
         minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
         maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
         isActive: couponForm.isActive,
+        expiresAt: couponForm.expiresAt,
       };
-
-      if (editingCouponId.value) {
-        const originalFormatted = originalExpiresAt ? new Date(originalExpiresAt).toISOString().slice(0, 16) : '';
-
-        if (formExpiresAt !== originalFormatted) {
-          formData.expiresAt = formExpiresAt ? new Date(formExpiresAt).toISOString() : null;
-        }
-      } else {
-        formData.expiresAt = formExpiresAt ? new Date(formExpiresAt).toISOString() : null;
-      }
 
       const response = await makeAuthenticatedRequest(url, {
         method: editingCouponId.value ? 'PUT' : 'POST',
@@ -633,7 +623,6 @@
       minOrder: coupon.minOrder || 0,
       maxDiscount: coupon.maxDiscount ?? '',
       expiresAt: formattedDate,
-      originalExpiresAt: coupon.expiresAt || '',
       isActive: coupon.isActive,
     });
   };
@@ -652,14 +641,9 @@
       description: '',
       minOrder: 0,
       maxDiscount: '',
-      originalExpiresAt: '',
       expiresAt: '',
       isActive: true,
     });
-  };
-
-  const cancelCouponEdit = () => {
-    resetCouponForm();
   };
 
   const formatCouponValue = coupon => {
@@ -689,7 +673,7 @@
     }
   };
 
-  const resetForm = () => {
+  const resetUserForm = () => {
     userForm.firstName = '';
     userForm.lastName = '';
     userForm.email = '';
@@ -744,7 +728,7 @@
 
       if (response.ok) {
         showMessage(data.message);
-        resetForm();
+        resetUserForm();
         await Promise.all([fetchUsers(), fetchAdminActions()]);
       } else {
         throw new Error(data.error || 'Operation failed');
@@ -768,10 +752,6 @@
     userForm.isAdmin = user.isAdmin;
     userForm.isActive = user.isActive;
     userForm.password = '';
-  };
-
-  const cancelEdit = () => {
-    resetForm();
   };
 
   const formatDate = dateString => {

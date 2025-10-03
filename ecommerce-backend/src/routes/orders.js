@@ -239,11 +239,15 @@ router.put('/:id/cancel', async (req, res) => {
       }
 
       if (order.status === 'CANCELLED') {
-        throw new Error('Order is already cancelled');
+        throw new Error('Order has already been cancelled. No further action is required.');
       }
 
       if (order.status === 'DELIVERED') {
-        throw new Error('Cannot cancel orders that have already been delivered');
+        throw new Error('Cannot cancel orders that have already been delivered.');
+      }
+
+      if (order.status === 'SHIPPED') {
+        throw new Error('Cannot cancel orders that have already been shipped.');
       }
 
       const updatedOrder = await tx.order.update({
@@ -276,7 +280,7 @@ router.put('/:id/cancel', async (req, res) => {
     if (error.message === 'Access denied') {
       return res.status(403).json({ error: error.message });
     }
-    if (error.message.includes('Cannot cancel') || error.message.includes('already cancelled')) {
+    if (error.message.includes('Cannot cancel') || error.message.includes('already been cancelled')) {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to cancel order' });

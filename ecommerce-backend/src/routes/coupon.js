@@ -197,8 +197,8 @@ router.put('/admin/:id', async (req, res) => {
       expiresAt: (() => {
         if (expiresAt === undefined) return undefined;
 
-        const oldTime = existingCoupon.expiresAt ? existingCoupon.expiresAt.getTime() : null;
-        const newTime = expiresAt ? new Date(expiresAt).getTime() : null;
+        const oldTime = existingCoupon.expiresAt ? existingCoupon.expiresAt.toISOString().slice(0, 16) : null;
+        const newTime = expiresAt ? new Date(expiresAt).toISOString().slice(0, 16) : null;
 
         if (oldTime !== newTime) {
           return {
