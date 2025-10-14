@@ -71,7 +71,7 @@
 </template>
 
 <script>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, onUnmounted, watch } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import { useAuthStore } from '@/stores/authStore';
 
@@ -83,6 +83,9 @@
       const authStore = useAuthStore();
       const showLogoutMessage = ref(false);
       const logoutMessage = ref('');
+      const countdownInterval = ref(null);
+      const redirectTimeout = ref(null);
+      const isRedirecting = ref(false);
 
       const dismissLogoutMessage = () => {
         showLogoutMessage.value = false;
@@ -97,6 +100,26 @@
       const loading = ref(false);
       const error = ref('');
       const success = ref('');
+
+      const cleanupTimeouts = () => {
+        if (countdownInterval.value) {
+          clearInterval(countdownInterval.value);
+          countdownInterval.value = null;
+        }
+        if (redirectTimeout.value) {
+          clearTimeout(redirectTimeout.value);
+          redirectTimeout.value = null;
+        }
+      };
+
+      watch(
+        () => route.path,
+        newPath => {
+          if (newPath !== '/login' && isRedirecting.value) {
+            cleanupTimeouts();
+          }
+        }
+      );
 
       const handleLogin = async credentials => {
         error.value = '';
@@ -119,19 +142,25 @@
 
           if (response.ok) {
             authStore.setUser(data.user, data.token);
+            isRedirecting.value = true;
             let countdown = 3;
             success.value = `Login successful. Redirecting in ${countdown}s...`;
-            const countdownInterval = setInterval(() => {
+            countdownInterval.value = setInterval(() => {
               countdown--;
               if (countdown > 0) {
                 success.value = `Login successful. Redirecting in ${countdown}s...`;
               } else {
                 success.value = 'Redirecting...';
-                clearInterval(countdownInterval);
+                clearInterval(countdownInterval.value);
+                countdownInterval.value = null;
               }
             }, 1000);
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            router.push('/');
+            redirectTimeout.value = setTimeout(() => {
+              if (isRedirecting.value && route.path === '/login') {
+                router.push('/');
+              }
+              cleanupTimeouts();
+            }, 3000);
           } else {
             error.value = data.error || 'Login failed';
           }
@@ -153,6 +182,10 @@
             }
           }, 5000);
         }
+      });
+
+      onUnmounted(() => {
+        cleanupTimeouts();
       });
 
       return {

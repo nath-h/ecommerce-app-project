@@ -1,14 +1,13 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
-          Homepage: Selectable Recommended | Favorites link to toggle between them         
-          Cancel/edit orders (if not complete, simulate timeframe)
+          Homepage: Selectable Recommended | Favorites link to toggle between them (will need favorited flag in db)         
+          Edit orders (if not complete, simulate timeframe)
           Breadcrumb links that sort by type of item, favorites
           Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
-          Add pagination to ProductSearch (only show 20 items at a time) *might be done?*
+          Add pagination to ProductSearch (only show 20 items at a time) *might be done? add >20 and try to search*
           The above pagination may break ProductSearch so will need to find a workaround as it may only search the 20 currently displayed products
           Change ProductSearch to save the search query in router link - watch: (search value, route.query) for constant update - lodash debounce to avoid lag
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
-          PastOrders is broken because it's still looking for local store data
           Session expiring soon modal has incorrect session expiration time. Got a warning that said it will expire in 1100s
           Got another modal after the above that was correct with 300s
           Tried to extend session and got Token refresh error: TokenExpiredError: jwt expired expiredAt: 2025-09-18T07:29:14.000Z
@@ -16,18 +15,17 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          Updating coupon: maxDiscount always updates because of a type mismatch and changing expired time formats differently in admin action report (cont)
-          Need to implement formatDate into coupon.js or find a way to force formatting
           Admin product view UI (ProductView page except an admin version) - clicking on it can open admin actions such as disabling, changing stock, updating price
           Allow admin to add a product to recommended, will need to add a isRecommended flag in db
           Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
           Add/remove items from display (AdminAction AdminActionType DISABLED/UPDATED_PRODUCT product.isActive = false)
           Order status tracking/updates (may not be worth it)
-          Basic analytics such as sales, popular products
+          Basic analytics such as sales, popular products (cron job)
           
           DATABASE FUNCTIONALITY: 
+          Add and test pagination for every relevant page (we'll want a multiple of 3 for products since they display in rows of 3)
           Add discount per item (search by item name, find by name, apply to id)  
-          Order history saved to user account
+          Add scheduled backup using pg_dump and pg_restore (cron job on server)
 
           Visuals/frontend/css:
           Toast/snack bar notifications for actions (Vue Toastification?)

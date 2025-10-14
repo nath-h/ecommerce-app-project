@@ -10,6 +10,7 @@ import ProductView from '@/views/ProductView.vue';
 import Profile from '@/views/Profile.vue';
 import AdminView from '@/views/AdminView.vue';
 import OrderConfirmation from '@/views/OrderConfirmation.vue';
+import OrderView from '@/views/OrderView.vue';
 
 const routes = [
   {
@@ -67,6 +68,12 @@ const routes = [
     path: '/order-confirmation/:id',
     name: 'OrderConfirmation',
     component: OrderConfirmation,
+    props: true,
+  },
+  {
+    path: '/order/:id',
+    name: 'OrderView',
+    component: OrderView,
     props: true,
   },
   {

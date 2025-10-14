@@ -1,6 +1,12 @@
 <template>
   <main class="wrapper">
     <h1>Checkout</h1>
+
+    <div
+      v-if="orderError"
+      class="error-message"
+      v-html="orderError"></div>
+
     <div
       v-if="cart.length === 0"
       class="empty-cart">
@@ -32,10 +38,6 @@
           to save your preferences and view order history.
         </p>
       </div>
-      <div
-        v-if="orderError"
-        class="error-message"
-        v-html="orderError"></div>
     </div>
 
     <div class="checkout-section">
@@ -159,7 +161,7 @@
         </div>
 
         <div class="form-group">
-          <label for="phone">Phone Number</label>
+          <label for="phone">Phone Number *</label>
           <input
             type="tel"
             id="phone"
@@ -290,8 +292,13 @@
 
       const submitOrder = async () => {
         isSubmitting.value = true;
+        orderError.value = '';
 
         try {
+          if (!cart.value || cart.value.length === 0) {
+            orderError.value = 'Your cart is empty. Please add items before checking out.';
+          }
+
           const validationErrors = await ecommerceStore.validateCartStock();
 
           if (validationErrors && validationErrors.length > 0) {
@@ -310,10 +317,14 @@
           }
         } catch (error) {
           console.error('Order submission failed:', error);
-          if (error.message.includes('Insufficient stock')) {
+          if (error.message.includes('Cart items are required') || error.message.includes('cart was empty')) {
+            orderError.value = 'Your cart is empty. Please add items before checking out.';
+          } else if (error.message.includes('Insufficient stock')) {
             orderError.value = `Order failed: ${error.message}`;
+          } else if (error.message.includes('Name, email, and address are required')) {
+            orderError.value = 'Please fill in all required fields (Name, Email, Address).';
           } else {
-            orderError.value = 'Order submission failed. Please try again.';
+            orderError.value = `Order submission failed: ${error.message || 'Please try again.'}`;
           }
         } finally {
           isSubmitting.value = false;

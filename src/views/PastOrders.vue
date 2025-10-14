@@ -16,6 +16,12 @@
         class="btn btn-secondary">
         Try again
       </button>
+      <router-link
+        to="/login"
+        class="btn btn-primary"
+        style="margin-left: 20px">
+        Login
+      </router-link>
     </div>
 
     <div v-else-if="orders.length > 0">
@@ -72,7 +78,7 @@
 
             <div class="order-actions">
               <router-link
-                :to="`/order-confirmation/${order.id}`"
+                :to="`/order/${order.id}`"
                 class="btn btn-outline">
                 View Details
               </router-link>
@@ -339,35 +345,28 @@
   padding: 20px;
 }
 
-.loading-state,
-.error-state,
-.empty-state {
-  text-align: center;
-  padding: 50px 20px;
-}
-
 .orders-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
   padding: 15px;
-  background-color: #f8f9fa;
   border-radius: 8px;
 }
 
 .order-section {
+
   margin-bottom: 40px;
   padding: 20px;
-  border: 2px solid #ddd;
+  border: 6px solid #ddd;
   border-radius: 8px;
-  background-color: #f8f9fa;
+
 }
 
 .order-header {
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 2px solid #ccc;
 }
 
 .order-header h3 {
@@ -377,9 +376,12 @@
 
 .order-header-top {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  
 }
+
 
 .order-date,
 .order-customer,
@@ -390,10 +392,12 @@
 }
 
 .order-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
   gap: 10px;
   flex-direction: column;
-  align-items: flex-end;
 }
 
 .order-total-header {
@@ -402,7 +406,8 @@
 }
 
 .status-badge {
-  padding: 4px 8px;
+  padding: 4px 6px;
+  margin-left: 3px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: bold;
@@ -441,8 +446,7 @@
 
 .product-table {
   width: 100%;
-  border-collapse: collapse;
-  background-color: white;
+  border-collapse: collapse;;
   margin-bottom: 10px;
   border-radius: 8px;
   overflow: hidden;
@@ -452,7 +456,7 @@
 .product-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 3px solid #ddd;
 }
 
 .product-table thead td {
@@ -580,6 +584,10 @@
     flex-direction: column;
     gap: 15px;
   }
+
+  
+
+  
 
   .order-actions {
     align-items: stretch;

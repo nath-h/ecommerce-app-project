@@ -54,23 +54,30 @@ router.post('/', async (req, res) => {
         }
       }
 
+      const orderData = {
+        subtotal: parsedSubtotal,
+        discount: parsedDiscount,
+        total: parsedTotal,
+        notes: notes || null,
+        couponCode: coupon?.code || null,
+        couponDiscount: coupon?.discount ? parseFloat(coupon.discount) : null,
+        couponType: coupon?.type || null,
+        couponValue: coupon?.value ? parseFloat(coupon.value) : null,
+        couponDescription: coupon?.description || null,
+        customerName: customerInfo.name,
+        customerEmail: customerInfo.email,
+        customerPhone: customerInfo.phone || null,
+        customerAddress: customerInfo.address,
+      };
+
+      if (validatedUserId) {
+        orderData.user = {
+          connect: { id: validatedUserId },
+        };
+      }
+
       const newOrder = await tx.order.create({
-        data: {
-          userId: validatedUserId,
-          subtotal: parsedSubtotal,
-          discount: parsedDiscount,
-          total: parsedTotal,
-          notes: notes || null,
-          couponCode: coupon?.code || null,
-          couponDiscount: coupon?.discount ? parseFloat(coupon.discount) : null,
-          couponType: coupon?.type || null,
-          couponValue: coupon?.value ? parseFloat(coupon.value) : null,
-          couponDescription: coupon?.description || null,
-          customerName: customerInfo.name,
-          customerEmail: customerInfo.email,
-          customerPhone: customerInfo.phone || null,
-          customerAddress: customerInfo.address,
-        },
+        data: orderData,
       });
 
       for (const item of cartItems) {
@@ -138,7 +145,11 @@ router.get('/', async (req, res) => {
     if (isAdmin) {
       whereClause = {};
     } else if (userIdParam && !isNaN(parseInt(userIdParam))) {
-      whereClause = { userId: parseInt(userIdParam) };
+      whereClause = {
+        user: {
+          id: parseInt(userIdParam),
+        },
+      };
     } else if (customerEmail) {
       whereClause = {
         customerEmail: customerEmail,
@@ -189,7 +200,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.query;
+    const { userId, customerEmail } = req.query;
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -207,8 +218,18 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (userId && order.userId !== parseInt(userId)) {
-      return res.status(403).json({ error: 'Access denied' });
+    let hasAccess = false;
+
+    if (userId && order.user?.id === parseInt(userId)) {
+      hasAccess = true;
+    } else if ((customerEmail && order.customerEmail === customerEmail) || order.user.email === customerEmail) {
+      hasAccess = true;
+    } else if (!userId && !customerEmail) {
+      return res.status(401).json({ error: 'Authentication required - provide userid or customerEmail' });
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied - this order does not belong to you' });
     }
     res.json(order);
   } catch (error) {
@@ -227,6 +248,7 @@ router.put('/:id/cancel', async (req, res) => {
         where: { id },
         include: {
           orderItems: true,
+          user: true,
         },
       });
 
@@ -234,8 +256,8 @@ router.put('/:id/cancel', async (req, res) => {
         throw new Error('Order not found');
       }
 
-      if (userId && order.userId != parseInt(userId)) {
-        throw new Error('Access denied');
+      if (userId && order.user?.id !== parseInt(userId)) {
+        throw new Error('Access denied - this order does not belong to you');
       }
 
       if (order.status === 'CANCELLED') {

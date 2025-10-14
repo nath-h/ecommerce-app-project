@@ -26,37 +26,9 @@
     </div>
 
     <div
-      v-if="order"
+      v-else-if="order"
       class="confirmation-container">
-      <div
-        v-if="order.status === 'CANCELLED'"
-        class="cancelled-header">
-        <div class="cancelled-icon">✕</div>
-        <h1>Order Cancelled</h1>
-        <p class="cancellation-message">This order has been cancelled and will not be processed.</p>
-      </div>
-
-      <div
-        v-if="order.status === 'PENDING'"
-        class="success-header">
-        <div class="success-icon">✓</div>
-        <h1>Order Received!</h1>
-        <p class="confirmation-message">
-          Thank you for your order. We've received your request and will begin preparing it shortly.
-        </p>
-      </div>
-
-      <div
-        v-else-if="order.status === 'CONFIRMED'"
-        class="success-header">
-        <div class="success-icon">✓</div>
-        <h1>Order Confirmed!</h1>
-        <p class="confirmation-message">
-          Thank you for your order. We've confirmed your order and we have begun preparing it. Check back here for
-          updates.
-        </p>
-      </div>
-
+      <!-- Order Details -->
       <div class="order-section">
         <h2>Order Details</h2>
         <div class="order-info">
@@ -85,6 +57,7 @@
         </div>
       </div>
 
+      <!-- Customer Information -->
       <div class="customer-section">
         <h2>Delivery Information</h2>
         <div class="customer-info">
@@ -109,6 +82,7 @@
         </div>
       </div>
 
+      <!-- Order Items -->
       <div class="items-section">
         <h2>Order Items</h2>
         <table class="order-table">
@@ -179,6 +153,7 @@
         </button>
       </div>
 
+      <!-- Action Buttons -->
       <div class="actions-section">
         <router-link
           to="/"
@@ -188,7 +163,7 @@
         <router-link
           v-if="authStore.user"
           to="/past-orders"
-          class="btn btn-secondary">
+          class="btn btn-outline">
           View Order History
         </router-link>
         <button
@@ -259,13 +234,12 @@
     components: {
       GuestVerificationModal,
     },
-    name: 'OrderConfirmation',
+    name: 'OrderView',
     setup() {
       const route = useRoute();
       const router = useRouter();
       const ecommerceStore = useEcommerceStore();
       const authStore = useAuthStore();
-
       const order = ref(null);
       const loading = ref(true);
       const error = ref(null);
@@ -307,13 +281,13 @@
             } else if (response.status === 403) {
               if (!authStore.user) {
                 emailError.value = 'Invalid email address for this order';
-                showEmailModal = true;
+                showEmailModal.value = true;
                 loading.value = false;
                 return;
               }
               throw new Error('Access denied - this order does not belong to you');
             } else if (response.status === 401) {
-              showEmailModal = true;
+              showEmailModal.value = true;
               loading.value = false;
               return;
             } else {
@@ -392,10 +366,6 @@
         const statusOrder = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED'];
         const currentIndex = statusOrder.indexOf(order.value.status);
         const stepIndex = statusOrder.indexOf(stepStatus);
-
-        if (order.value.status === 'CONFIRMED' && stepStatus === 'PREPARING') {
-          return true;
-        }
 
         return stepIndex <= currentIndex;
       };
@@ -486,6 +456,7 @@
 .success-header {
   margin-bottom: 40px;
   padding: 30px;
+  background-color: #f8f9fa;
   border-radius: 8px;
 }
 
@@ -508,38 +479,6 @@
   margin-bottom: 15px;
 }
 
-.cancelled-header {
-  margin-bottom: 40px;
-  padding: 30px;
-  background-color: #f8d7da;
-  border-radius: 8px;
-}
-
-.cancelled-icon {
-  width: 60px;
-  height: 60px;
-  background-color: #dc3545;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  font-weight: bold;
-  margin: 0 auto 20px;
-}
-
-.cancelled-header h1 {
-  color: #dc3545;
-  margin-bottom: 15px;
-}
-
-.cancellation-message {
-  font-size: 18px;
-  color: #721c24;
-  margin: 0;
-}
-
 .confirmation-message {
   font-size: 18px;
   color: #6c757d;
@@ -549,17 +488,12 @@
 .order-section,
 .customer-section,
 .items-section,
+.actions-section,
 .status-info {
   margin-bottom: 30px;
   padding: 20px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  text-align: left;
-}
-
-.actions-section {
-  margin-bottom: 30px;
-  padding: 20px;
   text-align: left;
 }
 
@@ -654,6 +588,7 @@
 }
 
 .order-table th {
+  background-color: #f8f9fa;
   font-weight: bold;
 }
 
@@ -709,8 +644,14 @@
 }
 
 .btn-secondary {
-  background-color: #42b983;
+  background-color: #6c757d;
   color: white;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #42b983;
+  border: 2px solid #42b983;
 }
 
 .btn-danger {
