@@ -23,6 +23,11 @@
             User Management
           </button>
           <button
+            :class="['tab-btn', { active: activeTab === 'products' }]"
+            @click="setActiveTab('products')">
+            Product Management
+          </button>
+          <button
             :class="['tab-btn', { active: activeTab === 'coupons' }]"
             @click="setActiveTab('coupons')">
             Coupon Management
@@ -377,6 +382,180 @@
         </section>
 
         <section
+          v-if="activeTab === 'products'"
+          class="tab-content">
+          <div class="form-section">
+            <h2>{{ editingProductId ? 'Edit Product' : 'Add new product' }}</h2>
+
+            <form
+              @submit.prevent="handleCouponSubmit"
+              class="coupon-form">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>Code *</label>
+                  <input
+                    v-model="couponForm.code"
+                    type="text"
+                    required
+                    :disabled="isLoading"
+                    placeholder="Coupon Code" />
+                </div>
+
+                <div class="form-field">
+                  <label>Type *</label>
+                  <select
+                    v-model="couponForm.type"
+                    required
+                    :disabled="isLoading">
+                    <option value="PERCENTAGE">Percentage</option>
+                    <option value="FIXED">Fixed Amount</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label>Value *</label>
+                  <input
+                    v-model="couponForm.value"
+                    type="number"
+                    step="0.01"
+                    required
+                    :disabled="isLoading"
+                    :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
+                </div>
+
+                <div class="form-field">
+                  <label>Minimum Order Amount</label>
+                  <input
+                    v-model="couponForm.minOrder"
+                    type="number"
+                    step="0.01"
+                    :disabled="isLoading"
+                    placeholder="50.00" />
+                </div>
+
+                <div class="form-field">
+                  <label>Maximum Discount</label>
+                  <input
+                    v-model="couponForm.maxDiscount"
+                    type="number"
+                    step="0.01"
+                    :disabled="isLoading"
+                    placeholder="100.00" />
+                </div>
+
+                <div class="form-field">
+                  <label>Expires At (local time)</label>
+                  <input
+                    v-model="couponForm.expiresAt"
+                    type="datetime-local"
+                    :disabled="isLoading" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Description</label>
+                <textarea
+                  v-model="couponForm.description"
+                  :disabled="isLoading"
+                  rows="3"
+                  placeholder="Enter coupon description..."></textarea>
+              </div>
+
+              <div class="form-checkboxes">
+                <label class="checkbox-label">
+                  <input
+                    v-model="couponForm.isActive"
+                    type="checkbox"
+                    :disabled="isLoading" />
+                  <span>Active</span>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  :disabled="isLoading"
+                  class="btn btn-primary">
+                  {{ isLoading ? 'Saving...' : editingCouponId ? 'Update coupon' : 'Create coupon' }}
+                </button>
+
+                <button
+                  v-if="editingCouponId"
+                  type="button"
+                  @click="resetCouponForm"
+                  :disabled="isLoading"
+                  class="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="coupons-section">
+            <h2>All coupons</h2>
+            <div
+              v-if="loadingCoupons"
+              class="loading-state">
+              Loading coupons...
+            </div>
+
+            <div
+              v-else
+              class="table-wrapper">
+              <table class="coupons-table">
+                <thead>
+                  <tr>
+                    <th>Coupon ID</th>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Min Order Amount</th>
+                    <th>Max Discount</th>
+                    <th>Status</th>
+                    <th>Expires At (local time)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="coupon in coupons"
+                    :key="coupon.id">
+                    <td>{{ coupon.id }}</td>
+                    <td>{{ coupon.code }}</td>
+                    <td>{{ formatCouponType(coupon.type) }}</td>
+                    <td>{{ formatCouponValue(coupon) }}</td>
+                    <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
+                    <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
+                    <td>
+                      <span
+                        :class="[
+                          'badge',
+                          {
+                            'badge-active': coupon.isActive && !isCouponExpired(coupon.expiresAt),
+                            'badge-inactive': !coupon.isActive,
+                            'badge-expired': isCouponExpired(coupon.expiresAt),
+                          },
+                        ]">
+                        {{ isCouponExpired(coupon.expiresAt) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td>{{ coupon.expiresAt ? formatDate(coupon.expiresAt) : 'Never' }}</td>
+                    <td>
+                      <button
+                        @click="editCoupon(coupon)"
+                        :disabled="isLoading"
+                        class="btn btn-sb btn-outline">
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section
           v-if="activeTab === 'actions'"
           class="tab-content">
           <h2>Admin Actions Log</h2>
@@ -455,6 +634,7 @@
   const coupons = ref([]);
   const loadingCoupons = ref(false);
   const editingCouponId = ref(null);
+  const editingProductId = ref(null);
 
   const couponForm = reactive({
     code: '',
@@ -607,6 +787,28 @@
 
   const editCoupon = coupon => {
     editingCouponId.value = coupon.id;
+
+    let formattedDate = '';
+    if (coupon.expiresAt) {
+      const utcDate = new Date(coupon.expiresAt);
+      const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
+      formattedDate = localDate.toISOString().slice(0, 16);
+    }
+
+    Object.assign(couponForm, {
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      description: coupon.description || '',
+      minOrder: coupon.minOrder || 0,
+      maxDiscount: coupon.maxDiscount ?? '',
+      expiresAt: formattedDate,
+      isActive: coupon.isActive,
+    });
+  };
+
+  const editProduct = product => {
+    editingProductId.value = product.id;
 
     let formattedDate = '';
     if (coupon.expiresAt) {

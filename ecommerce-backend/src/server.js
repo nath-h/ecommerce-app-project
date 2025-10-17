@@ -1,6 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
 dotenv.config();
 const app = express();
@@ -17,12 +17,13 @@ app.use((req, res, next) => {
   console.log(`Backend hit - ${req.method} ${req.path}`);
   next();
 });
-const { router: authRouter } = require('./routes/auth');
-const productRoutes = require('./routes/products');
-const ordersRoutes = require('./routes/orders');
-const { router: adminRouter } = require('./routes/admin');
-const couponRoutes = require('./routes/coupon');
-require('./jobs');
+
+import authRouter from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import ordersRoutes from './routes/orders.js';
+import adminRouter from './routes/admin.js';
+import couponRoutes from './routes/coupon.js';
+import './jobs.js';
 
 app.use('/api/admin', adminRouter);
 app.use('/api/coupon', couponRoutes);

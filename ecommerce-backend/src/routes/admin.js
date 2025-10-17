@@ -1,7 +1,8 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const { PrismaClient } = require('@prisma/client');
-const { authenticateToken, requireAdmin } = require('./auth');
+import express from 'express';
+import bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
+import { authenticateToken, requireAdmin } from './auth.js';
+
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -307,7 +308,5 @@ router.get('/actions', async (req, res) => {
   }
 });
 
-module.exports = {
-  router,
-  logAdminAction,
-};
+export { logAdminAction };
+export default router;

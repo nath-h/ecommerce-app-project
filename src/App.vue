@@ -8,9 +8,6 @@
           The above pagination may break ProductSearch so will need to find a workaround as it may only search the 20 currently displayed products
           Change ProductSearch to save the search query in router link - watch: (search value, route.query) for constant update - lodash debounce to avoid lag
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
-          Session expiring soon modal has incorrect session expiration time. Got a warning that said it will expire in 1100s
-          Got another modal after the above that was correct with 300s
-          Tried to extend session and got Token refresh error: TokenExpiredError: jwt expired expiredAt: 2025-09-18T07:29:14.000Z
           User dropdown under/above cart (find default profile picture logo, take out Profile from navbar and reintegrate)        
           Fake payment integration (stripe test mode?)
           

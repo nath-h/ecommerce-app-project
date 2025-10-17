@@ -1,5 +1,5 @@
-const cron = require('node-cron');
-const { PrismaClient } = require('@prisma/client');
+import cron from 'node-cron';
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 console.log(`Initializing scheduled jobs`);

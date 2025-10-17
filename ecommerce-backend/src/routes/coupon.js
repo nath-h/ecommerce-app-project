@@ -1,7 +1,7 @@
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { authenticateToken, requireAdmin } = require('./auth');
-const { logAdminAction } = require('./admin');
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticateToken, requireAdmin } from './auth.js';
+import { logAdminAction } from './admin.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -233,4 +233,4 @@ router.put('/admin/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

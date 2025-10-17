@@ -1,7 +1,7 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -336,8 +336,5 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-module.exports = {
-  router: router,
-  authenticateToken,
-  requireAdmin,
-};
+export { authenticateToken, requireAdmin };
+export default router;
