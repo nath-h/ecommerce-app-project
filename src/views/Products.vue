@@ -46,5 +46,8 @@
         this.isSearching = isActive;
       },
     },
+    onMounted() {
+      this.store.initializeStore();
+    },
   };
 </script>

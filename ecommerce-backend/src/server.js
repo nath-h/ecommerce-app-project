@@ -29,7 +29,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/auth', authRouter);
-app.use('/api', productRoutes);
+app.use('/api/products', productRoutes);
 app.get('/', (req, res) => {
   console.log(`Root endpoint hit`);
   res.json({ message: 'Backend API is running!' });

@@ -80,7 +80,7 @@ model Coupon {
   type        CouponType
   value       Decimal    @db.Decimal(6, 2)
   description String?
-  minOrder    Decimal    @default(0) @db.Decimal(6, 2)
+  minOrder    Decimal?    @db.Decimal(6, 2)
   maxDiscount Decimal?   @db.Decimal(6, 2)
   isActive    Boolean    @default(true)
   expiresAt   DateTime?

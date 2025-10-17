@@ -102,7 +102,11 @@ router.post('/admin', async (req, res) => {
     });
 
     if (existingCoupon) {
-      return res.status(409).json({ error: 'This coupon already exists' });
+      return res.status(200).json({
+        message: `Coupon "${existingCoupon.code}" already exists. Loaded this coupon to be edited instead.`,
+        coupon: existingCoupon,
+        isExisting: true,
+      });
     }
 
     const newCoupon = await prisma.coupon.create({
@@ -111,7 +115,7 @@ router.post('/admin', async (req, res) => {
         type,
         value: parseFloat(value),
         description,
-        minOrder: minOrder ? parseFloat(minOrder) : 0,
+        minOrder: minOrder ? parseFloat(minOrder) : null,
         maxDiscount: maxDiscount ? parseFloat(maxDiscount) : null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         isActive: Boolean(isActive),

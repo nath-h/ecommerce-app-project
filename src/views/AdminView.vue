@@ -246,7 +246,9 @@
                     step="0.01"
                     required
                     :disabled="isLoading"
-                    :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
+                    :max="couponForm.type === 'PERCENTAGE' ? 100 : 9999.99"
+                    :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'"
+                    @input="formatDecimal" />
                 </div>
 
                 <div class="form-field">
@@ -256,7 +258,9 @@
                     type="number"
                     step="0.01"
                     :disabled="isLoading"
-                    placeholder="50.00" />
+                    placeholder="50.00"
+                    max="9999.99"
+                    @input="formatDecimal" />
                 </div>
 
                 <div class="form-field">
@@ -266,7 +270,9 @@
                     type="number"
                     step="0.01"
                     :disabled="isLoading"
-                    placeholder="100.00" />
+                    placeholder="100.00"
+                    max="9999.99"
+                    @input="formatDecimal" />
                 </div>
 
                 <div class="form-field">
@@ -350,7 +356,7 @@
                     <td>{{ coupon.code }}</td>
                     <td>{{ formatCouponType(coupon.type) }}</td>
                     <td>{{ formatCouponValue(coupon) }}</td>
-                    <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
+                    <td>{{ coupon.minOrder === null ? '' : coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
                     <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
                     <td>
                       <span
@@ -388,87 +394,93 @@
             <h2>{{ editingProductId ? 'Edit Product' : 'Add new product' }}</h2>
 
             <form
-              @submit.prevent="handleCouponSubmit"
-              class="coupon-form">
+              @submit.prevent="handleProductSubmit"
+              class="product-form">
               <div class="form-grid">
                 <div class="form-field">
-                  <label>Code *</label>
+                  <label>Name *</label>
                   <input
-                    v-model="couponForm.code"
+                    v-model="productForm.name"
                     type="text"
                     required
                     :disabled="isLoading"
-                    placeholder="Coupon Code" />
+                    placeholder="Product Name" />
                 </div>
 
                 <div class="form-field">
                   <label>Type *</label>
                   <select
-                    v-model="couponForm.type"
+                    v-model="productForm.type"
                     required
                     :disabled="isLoading">
-                    <option value="PERCENTAGE">Percentage</option>
-                    <option value="FIXED">Fixed Amount</option>
+                    <option
+                      value=""
+                      disabled>
+                      Select product type...
+                    </option>
+                    <option value="MEAT">MEAT</option>
+                    <option value="FRUIT">FRUIT</option>
+                    <option value="VEGETABLE">VEGETABLE</option>
+                    <option value="OTHER">OTHER</option>
                   </select>
                 </div>
 
                 <div class="form-field">
-                  <label>Value *</label>
+                  <label>Price (USD) *</label>
                   <input
-                    v-model="couponForm.value"
+                    v-model="productForm.price"
                     type="number"
                     step="0.01"
+                    min="0"
                     required
                     :disabled="isLoading"
-                    :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'" />
+                    placeholder="0.00"
+                    @input="formatDecimal" />
                 </div>
 
                 <div class="form-field">
-                  <label>Minimum Order Amount</label>
+                  <label>Icon</label>
                   <input
-                    v-model="couponForm.minOrder"
-                    type="number"
-                    step="0.01"
+                    v-model="productForm.icon"
+                    type="text"
                     :disabled="isLoading"
-                    placeholder="50.00" />
+                    placeholder="Product Icon (Icofont)" />
                 </div>
 
                 <div class="form-field">
-                  <label>Maximum Discount</label>
+                  <label>Stock *</label>
                   <input
-                    v-model="couponForm.maxDiscount"
+                    v-model="productForm.stock"
                     type="number"
-                    step="0.01"
+                    step="1"
                     :disabled="isLoading"
-                    placeholder="100.00" />
+                    placeholder="0" />
                 </div>
 
                 <div class="form-field">
-                  <label>Expires At (local time)</label>
-                  <input
-                    v-model="couponForm.expiresAt"
-                    type="datetime-local"
-                    :disabled="isLoading" />
+                  <label>Product Active? *</label>
+                  <select
+                    v-model="productForm.isActive"
+                    required
+                    :disabled="isLoading">
+                    <option
+                      value=""
+                      disabled>
+                      Select an option...
+                    </option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
                 </div>
               </div>
 
               <div class="form-field">
                 <label>Description</label>
                 <textarea
-                  v-model="couponForm.description"
+                  v-model="productForm.description"
                   :disabled="isLoading"
                   rows="3"
-                  placeholder="Enter coupon description..."></textarea>
-              </div>
-
-              <div class="form-checkboxes">
-                <label class="checkbox-label">
-                  <input
-                    v-model="couponForm.isActive"
-                    type="checkbox"
-                    :disabled="isLoading" />
-                  <span>Active</span>
-                </label>
+                  placeholder="Enter product description..."></textarea>
               </div>
 
               <div class="form-actions">
@@ -476,13 +488,13 @@
                   type="submit"
                   :disabled="isLoading"
                   class="btn btn-primary">
-                  {{ isLoading ? 'Saving...' : editingCouponId ? 'Update coupon' : 'Create coupon' }}
+                  {{ isLoading ? 'Saving...' : editingProductId ? 'Update product' : 'Create product' }}
                 </button>
 
                 <button
-                  v-if="editingCouponId"
+                  v-if="editingProductId"
                   type="button"
-                  @click="resetCouponForm"
+                  @click="resetProductForm"
                   :disabled="isLoading"
                   class="btn btn-secondary">
                   Cancel
@@ -491,58 +503,53 @@
             </form>
           </div>
 
-          <div class="coupons-section">
-            <h2>All coupons</h2>
+          <div class="products-section">
+            <h2>All products</h2>
             <div
-              v-if="loadingCoupons"
+              v-if="loadingProducts"
               class="loading-state">
-              Loading coupons...
+              Loading products...
             </div>
 
             <div
               v-else
               class="table-wrapper">
-              <table class="coupons-table">
+              <table class="products-table">
                 <thead>
                   <tr>
-                    <th>Coupon ID</th>
-                    <th>Code</th>
+                    <th>Product ID</th>
+                    <th>Icon</th>
+                    <th>Name</th>
                     <th>Type</th>
-                    <th>Value</th>
-                    <th>Min Order Amount</th>
-                    <th>Max Discount</th>
+                    <th>Price</th>
                     <th>Status</th>
-                    <th>Expires At (local time)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="coupon in coupons"
-                    :key="coupon.id">
-                    <td>{{ coupon.id }}</td>
-                    <td>{{ coupon.code }}</td>
-                    <td>{{ formatCouponType(coupon.type) }}</td>
-                    <td>{{ formatCouponValue(coupon) }}</td>
-                    <td>{{ coupon.minOrder === '0' ? '' : `$${coupon.minOrder}` }}</td>
-                    <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
+                    v-for="product in products"
+                    :key="product.id">
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.icon }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ formatProductType(product.type) }}</td>
+                    <td>${{ formatPrice(product.price) }}</td>
                     <td>
                       <span
                         :class="[
                           'badge',
                           {
-                            'badge-active': coupon.isActive && !isCouponExpired(coupon.expiresAt),
-                            'badge-inactive': !coupon.isActive,
-                            'badge-expired': isCouponExpired(coupon.expiresAt),
+                            'badge-active': product.isActive,
+                            'badge-inactive': !product.isActive,
                           },
                         ]">
-                        {{ isCouponExpired(coupon.expiresAt) ? 'Expired' : coupon.isActive ? 'Active' : 'Inactive' }}
+                        {{ product.isActive ? 'Active' : 'Inactive' }}
                       </span>
                     </td>
-                    <td>{{ coupon.expiresAt ? formatDate(coupon.expiresAt) : 'Never' }}</td>
                     <td>
                       <button
-                        @click="editCoupon(coupon)"
+                        @click="editProduct(product)"
                         :disabled="isLoading"
                         class="btn btn-sb btn-outline">
                         Edit
@@ -620,15 +627,19 @@
 <script setup>
   import { ref, reactive, onMounted } from 'vue';
   import { useAuthStore } from '@/stores/authStore';
+  import { useEcommerceStore } from '@/stores/ecommerce';
 
   const authStore = useAuthStore();
+  const store = useEcommerceStore();
 
   const activeTab = ref('users');
   const users = ref([]);
+  const products = ref([]);
   const adminActions = ref([]);
   const isLoading = ref(false);
   const loadingUsers = ref(false);
   const loadingActions = ref(false);
+  const loadingProducts = ref(false);
   const editMode = ref(false);
   const editingUserId = ref(null);
   const coupons = ref([]);
@@ -641,16 +652,20 @@
     type: 'PERCENTAGE',
     value: '',
     description: '',
-    minOrder: 0,
+    minOrder: '',
     maxDiscount: '',
     expiresAt: '',
     isActive: true,
   });
 
-  const message = reactive({
-    show: false,
-    text: '',
-    type: 'success',
+  const productForm = reactive({
+    name: '',
+    type: '',
+    price: '',
+    icon: '',
+    description: '',
+    isActive: '',
+    stock: '',
   });
 
   const userForm = reactive({
@@ -662,6 +677,12 @@
     password: '',
     isAdmin: false,
     isActive: true,
+  });
+
+  const message = reactive({
+    show: false,
+    text: '',
+    type: 'success',
   });
 
   const getBadgeClass = action => {
@@ -678,6 +699,8 @@
       fetchAdminActions();
     } else if (tab === 'coupons' && coupons.value.length === 0) {
       fetchCoupons();
+    } else if (tab === 'products' && products.value.length === 0) {
+      fetchProducts();
     }
   };
 
@@ -748,6 +771,26 @@
     }
   };
 
+  const fetchProducts = async () => {
+    loadingProducts.value = true;
+
+    try {
+      const response = await makeAuthenticatedRequest('/api/products/admin');
+      const data = await response.json();
+
+      if (response.ok) {
+        products.value = data.products;
+      } else {
+        throw new Error(data.error || 'Failed to fetch products');
+      }
+    } catch (error) {
+      console.error('Error fetching products', error);
+      showMessage(error.message, 'error');
+    } finally {
+      loadingProducts.value = false;
+    }
+  };
+
   const handleCouponSubmit = async () => {
     isLoading.value = true;
 
@@ -759,7 +802,7 @@
         type: couponForm.type,
         value: parseFloat(couponForm.value),
         description: couponForm.description,
-        minOrder: couponForm.minOrder === '' ? 0 : parseFloat(couponForm.minOrder),
+        minOrder: couponForm.minOrder === '' ? null : parseFloat(couponForm.minOrder),
         maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
         isActive: couponForm.isActive,
         expiresAt: couponForm.expiresAt,
@@ -773,6 +816,12 @@
 
       if (!response.ok) {
         throw new Error(data.error || 'Operation failed');
+      }
+
+      if (data.isExisting && !editingCouponId.value) {
+        showMessage(data.message, 'info');
+        editCoupon(data.coupon);
+        return;
       }
       showMessage(data.message);
       resetCouponForm();
@@ -798,35 +847,113 @@
     Object.assign(couponForm, {
       code: coupon.code,
       type: coupon.type,
-      value: coupon.value,
+      value: formatPrice(coupon.value),
       description: coupon.description || '',
-      minOrder: coupon.minOrder || 0,
-      maxDiscount: coupon.maxDiscount ?? '',
+      minOrder: coupon.minOrder ? formatPrice(coupon.minOrder) : '',
+      maxDiscount: coupon.maxDiscount && parseFloat(coupon.maxDiscount) > 0 ? formatPrice(coupon.maxDiscount) : 0,
       expiresAt: formattedDate,
       isActive: coupon.isActive,
     });
+
+    const formSection = document.querySelector('.form-section');
+    if (formSection) {
+      formSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
   };
 
   const editProduct = product => {
     editingProductId.value = product.id;
 
-    let formattedDate = '';
-    if (coupon.expiresAt) {
-      const utcDate = new Date(coupon.expiresAt);
-      const localDate = new Date(utcDate.getTime() - utcDate.getTimezoneOffset() * 60000);
-      formattedDate = localDate.toISOString().slice(0, 16);
-    }
-
-    Object.assign(couponForm, {
-      code: coupon.code,
-      type: coupon.type,
-      value: coupon.value,
-      description: coupon.description || '',
-      minOrder: coupon.minOrder || 0,
-      maxDiscount: coupon.maxDiscount ?? '',
-      expiresAt: formattedDate,
-      isActive: coupon.isActive,
+    Object.assign(productForm, {
+      name: product.name,
+      type: product.type,
+      price: formatPrice(product.price),
+      icon: product.icon,
+      description: product.description || '',
+      isActive: product.isActive,
+      stock: product.stock,
     });
+
+    const formSection = document.querySelector('.form-section');
+
+    formSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
+  const formatDecimal = event => {
+    let value = event.target.value;
+    if (value.includes('.')) {
+      const parts = value.split('.');
+      if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+        event.target.value = value;
+        productForm.price = value;
+      }
+    }
+  };
+
+  const handleProductSubmit = async () => {
+    isLoading.value = true;
+
+    try {
+      const url = editingProductId.value ? `/api/products/admin/${editingProductId.value}` : '/api/products/admin';
+
+      const formData = {
+        name: productForm.name,
+        type: productForm.type,
+        price: parseFloat(productForm.price),
+        icon: productForm.icon || 'spoon-and-fork',
+        description: productForm.description,
+        isActive: productForm.isActive,
+        stock: productForm.stock,
+      };
+
+      const response = await makeAuthenticatedRequest(url, {
+        method: editingProductId.value ? 'PUT' : 'POST',
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Operation failed');
+      }
+
+      if (data.isExisting && !editingProductId.value) {
+        showMessage(data.message, 'info');
+        editProduct(data.product);
+        return;
+      }
+      showMessage(data.message);
+      resetProductForm();
+      await Promise.all([fetchProducts(), fetchAdminActions(), store.initializeStore()]);
+    } catch (error) {
+      console.error('Error submitting product:', error);
+      showMessage(error.message, 'error');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const resetProductForm = () => {
+    editingProductId.value = null;
+    Object.assign(productForm, {
+      name: '',
+      type: '',
+      price: '',
+      icon: '',
+      description: '',
+      isActive: '',
+      stock: '',
+    });
+  };
+
+  const formatProductType = type => {
+    return type.charAt(0) + type.slice(1).toLowerCase();
   };
 
   const isCouponExpired = expiresAt => {
@@ -841,7 +968,7 @@
       type: 'PERCENTAGE',
       value: '',
       description: '',
-      minOrder: 0,
+      minOrder: '',
       maxDiscount: '',
       expiresAt: '',
       isActive: true,
@@ -954,6 +1081,13 @@
     userForm.isAdmin = user.isAdmin;
     userForm.isActive = user.isActive;
     userForm.password = '';
+
+    const formSection = document.querySelector('.form-section');
+
+    formSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   };
 
   const formatDate = dateString => {
@@ -965,6 +1099,10 @@
       minute: '2-digit',
       second: '2-digit',
     });
+  };
+
+  const formatPrice = price => {
+    return parseFloat(price).toFixed(2);
   };
 
   const formatActionType = actionType => {
@@ -986,6 +1124,9 @@
           .map(([field, { from, to }]) => {
             if (field === 'expiresAt') {
               return `<strong>Expires At: </strong>${formatDate(from)} → ${formatDate(to)}`;
+            }
+            if (field === 'price') {
+              return `<strong>Price: </strong>$${formatPrice(from)} → $${formatPrice(to)}`;
             }
             return `<strong>${field}: </strong>${from}→${to}`;
           })
@@ -1009,7 +1150,16 @@
             expirationText = 'Never';
           }
         }
+
         return `<strong>Created coupon: </strong>${parsed.code}<br> <strong>Type: </strong>${parsed.type}<br><strong>Value: </strong>${value}<br> <strong>Expires:</strong> ${expirationText}<br> <strong>Active:</strong> ${parsed.isActive}`;
+      }
+
+      if (parsed.name) {
+        return `<strong>Created product: </strong>${parsed.name}<br> <strong>Icon: </strong>${
+          parsed.icon
+        }<br><strong>Type: </strong>${parsed.type}<br> <strong>Price: </strong>$${formatPrice(
+          parsed.price
+        )}<br> <strong>Active:</strong> ${parsed.isActive}`;
       }
       return JSON.stringify(parsed, null, 2).replace(/\n/g, '<br>');
     } catch (error) {
@@ -1020,6 +1170,9 @@
   onMounted(() => {
     if (authStore.isAdmin) {
       fetchUsers();
+      fetchCoupons();
+      fetchAdminActions();
+      fetchProducts();
     }
   });
 </script>
@@ -1170,7 +1323,9 @@
 .form-checkboxes {
   display: flex;
   justify-content: center;
+  gap: 1rem;
 }
+
 
 .checkbox-label {
   display: flex;
@@ -1238,7 +1393,7 @@
   font-size: 0.875rem;
 }
 
-.users-section, .coupons-section, h2 {
+.users-section h2, .coupons-section h2, .products-section h2, .actions-section {
   color: #2c3e50;
   margin-bottom: 1rem;
   text-align: center;
@@ -1250,10 +1405,11 @@
   padding: 0;
 }
 
-.users-section, .coupons-section {
+.users-section, .coupons-section, .products-section, .actions-section {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
 .table-wrapper {
@@ -1264,9 +1420,11 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  display: flex;
+  justify-content: center;
 }
 
-.users-table, .actions-table, .coupons-table {
+.users-table, .actions-table, .coupons-table, .products-table {
   width: 100%;
   min-width: 800px;
   table-layout: auto;
@@ -1281,7 +1439,8 @@
 }
 .users-table th, .users-table td,
 .actions-table th, .actions-table td, 
-.coupons-table th, .coupons-table td {
+.coupons-table th, .coupons-table td,
+.products-table th, .products-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid gray;
   border-right: 1px solid gray;
@@ -1290,7 +1449,7 @@
   background: inherit;
 }
 
-.users-table th, .actions-table th, .coupons-table th {
+.users-table th, .actions-table th, .coupons-table th, .products-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #2c3e50;
@@ -1302,13 +1461,15 @@
 
 .users-table tbody tr:nth-child(even),
 .actions-table tbody tr:nth-child(even),
-.coupons-table tbody tr:nth-child(even) {
+.coupons-table tbody tr:nth-child(even),
+.products-table tbody tr:nth-child(even) {
   background-color: lightgrey;
 }
 
 .users-table tbody tr:hover,
 .actions-table tbody tr:hover,
-.coupons-table tbody tr:hover {
+.coupons-table tbody tr:hover,
+.products-table tbody tr:hover {
    background-color: #e3f2fd;
   transition: background-color 0.2s ease;
 }
@@ -1352,7 +1513,7 @@
   color: #084298;
 }
 
-.coupon-form textarea {
+.coupon-form textarea, .product-form textarea {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ced4da;
@@ -1361,7 +1522,23 @@
   font-family: inherit;
 }
 
-.coupon-form select {
+
+.product-form select option[value=""] {
+  display: none;
+}
+
+.product-form select option:not([value=""]) {
+  color: #333;
+
+}
+
+.product-form select:invalid {
+  color: #999;
+}
+
+
+
+.coupon-form select, .product-form select {
   padding: 0.75rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -1417,6 +1594,12 @@
   background-color: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+.toast-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb
 }
 
 @keyframes slideIn {

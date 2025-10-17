@@ -31,8 +31,33 @@ router.post('/', async (req, res) => {
     }
 
     const parsedSubtotal = parseFloat(subtotal);
-    const parsedDiscount = discount ? parseFloat(discount) : null;
+    const parsedDiscount = parseFloat(discount);
     const parsedTotal = parseFloat(total);
+
+    if (parsedTotal < 0) {
+      return res.status(400).json({
+        error: 'Invalid order: Total cannot be negative',
+      });
+    }
+
+    if (parsedDiscount > parsedSubtotal) {
+      return res.status(400).json({
+        error: 'Invalid order: Discount cannot exceed subtotal',
+      });
+    }
+
+    if (coupon && coupon.type === 'PERCENTAGE' && parseFloat(coupon.value) > 100) {
+      return res.status(400).json({
+        error: 'Invalid coupon: Percentage cannot exceed 100%',
+      });
+    }
+
+    const expectedTotal = parsedSubtotal - parsedDiscount;
+    if (Math.abs(expectedTotal - parsedTotal) > 0.01) {
+      return res.status(400).json({
+        error: 'Invalid order: Total calculation mismatch',
+      });
+    }
 
     const result = await prisma.$transaction(async tx => {
       for (const item of cartItems) {
