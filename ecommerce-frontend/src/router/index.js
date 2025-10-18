@@ -1,16 +1,16 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../views/Home.vue';
-import Products from '../views/Products.vue';
-import PastOrders from '../views/PastOrders.vue';
-import Checkout from '../views/Checkout.vue';
-import Register from '../views/Register.vue';
-import Login from '../views/Login.vue';
-import ResetPassword from '../views/ResetPassword.vue';
-import ProductView from '@/views/ProductView.vue';
-import Profile from '@/views/Profile.vue';
-import AdminView from '@/views/AdminView.vue';
-import OrderConfirmation from '@/views/OrderConfirmation.vue';
-import OrderView from '@/views/OrderView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from '../views/Home.vue'
+import Products from '../views/Products.vue'
+import PastOrders from '../views/PastOrders.vue'
+import Checkout from '../views/Checkout.vue'
+import Register from '../views/Register.vue'
+import Login from '../views/Login.vue'
+import ResetPassword from '../views/ResetPassword.vue'
+import ProductView from '@/views/ProductView.vue'
+import Profile from '@/views/Profile.vue'
+import AdminView from '@/views/AdminView.vue'
+import OrderConfirmation from '@/views/OrderConfirmation.vue'
+import OrderView from '@/views/OrderView.vue'
 
 const routes = [
   {
@@ -80,11 +80,11 @@ const routes = [
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },
-];
+]
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-});
+})
 
-export default router;
+export default router

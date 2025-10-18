@@ -5,12 +5,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
 
-app.use(
-  cors({
-    origin: 'http://localhost:8080',
-    credentials: true,
-  })
-);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {

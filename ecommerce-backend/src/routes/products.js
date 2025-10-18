@@ -23,7 +23,7 @@ router.get('/admin', async (req, res) => {
 
 router.post('/admin', async (req, res) => {
   try {
-    const { name, type, price, description, isActive, stock, icon } = req.body;
+    const { name, type, price, description, isActive, isFeatured, stock, icon } = req.body;
 
     if (!name || !type || !price || !stock) {
       return res.status(400).json({ error: 'Name, type, price and stock are required fields' });
@@ -52,7 +52,8 @@ router.post('/admin', async (req, res) => {
         type,
         price: parseFloat(price),
         description,
-        isActive: Boolean(isActive),
+        isActive: isActive,
+        isFeatured: isFeatured,
         stock: stock,
         icon: icon,
       },
@@ -64,6 +65,7 @@ router.post('/admin', async (req, res) => {
       price: newProduct.price,
       stock: newProduct.stock,
       isActive: newProduct.isActive,
+      isFeatured: newProduct.isFeatured,
     });
     res.status(201).json({
       message: 'Product created successfully',
@@ -78,7 +80,7 @@ router.post('/admin', async (req, res) => {
 router.put('/admin/:id', async (req, res) => {
   try {
     const productId = req.params.id;
-    const { name, type, price, description, isActive, stock, icon } = req.body;
+    const { name, type, price, description, isActive, isFeatured, stock, icon } = req.body;
     const existingProduct = await prisma.product.findUnique({
       where: {
         id: productId,
@@ -113,6 +115,7 @@ router.put('/admin/:id', async (req, res) => {
         stock,
         description,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
+        isFeatured: isFeatured !== undefined ? isFeatured : undefined,
         icon: icon,
       },
     });
@@ -127,6 +130,8 @@ router.put('/admin/:id', async (req, res) => {
       stock: stock !== existingProduct.stock ? { from: existingProduct.stock, to: stock } : undefined,
       icon: icon !== existingProduct.icon ? { from: existingProduct.icon, to: icon } : undefined,
       isActive: isActive !== existingProduct.isActive ? { from: existingProduct.isActive, to: isActive } : undefined,
+      isFeatured:
+        isFeatured !== existingProduct.isFeatured ? { from: existingProduct.isFeatured, to: isFeatured } : undefined,
     };
 
     const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
@@ -173,6 +178,29 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/featured', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        isFeatured: true,
+      },
+      orderBy: {
+        price: 'desc',
+      },
+    });
+    const formattedProducts = products.map(product => ({
+      ...product,
+      price: product.price.toString(),
+    }));
+
+    res.json(formattedProducts);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -199,9 +227,12 @@ router.get('/:id', async (req, res) => {
 router.get('/by-name/:name', async (req, res) => {
   try {
     const { name } = req.params;
-    const product = await prisma.product.findUnique({
+    const product = await prisma.product.findFirst({
       where: {
-        name: decodeURIComponent(name),
+        name: {
+          equals: decodeURIComponent(name),
+          mode: 'insensitive',
+        },
         isActive: true,
       },
     });
@@ -221,7 +252,7 @@ router.get('/by-name/:name', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { id, name, description, price, type, icon, stock } = req.body;
+    const { id, name, description, price, type, isActive, isFeatured, icon, stock } = req.body;
     const product = await prisma.product.create({
       data: {
         id,
@@ -229,6 +260,8 @@ router.post('/', async (req, res) => {
         description,
         price: parseFloat(price),
         type,
+        isActive,
+        isFeatured,
         icon: icon || 'spoon-and-fork',
         stock: parseInt(stock) || 0,
       },
@@ -247,7 +280,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, type, icon, stock, isActive } = req.body;
+    const { name, description, price, type, isActive, isFeatured, icon, stock } = req.body;
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
@@ -256,6 +289,7 @@ router.put('/:id', async (req, res) => {
     if (icon !== undefined) updateData.icon = icon;
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
     const product = await prisma.product.update({
       where: { id },
       data: updateData,

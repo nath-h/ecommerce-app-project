@@ -12,8 +12,6 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          Admin product view UI (ProductView page except an admin version) - clicking on it can open admin actions such as disabling, changing stock, updating price
-          Allow admin to add a product to recommended, will need to add a isRecommended flag in db
           Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)
@@ -33,29 +31,29 @@
   <header class="top-bar spread">
     <nav class="top-bar-nav">
       <TokenExpirationWarning />
-      <router-link
-        to="/"
-        class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()">
+      <router-link to="/" class="top-bar-link" @click="store.showSidebar && store.toggleSidebar()">
         <i class="icofont-spoon-and-fork"></i>
         <span>Home</span>
       </router-link>
       <router-link
         to="/products"
         class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()">
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Products</span>
       </router-link>
       <router-link
         to="/past-orders"
         class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()">
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Past Orders</span>
       </router-link>
       <router-link
         to="/checkout"
         class="top-bar-link"
-        @click="store.showSidebar && store.toggleSidebar()">
+        @click="store.showSidebar && store.toggleSidebar()"
+      >
         <span>Checkout</span>
       </router-link>
 
@@ -63,50 +61,43 @@
         <router-link
           to="/register"
           class="top-bar-link"
-          @click="store.showSidebar && store.toggleSidebar()">
+          @click="store.showSidebar && store.toggleSidebar()"
+        >
           <span>Register</span>
         </router-link>
         <router-link
           to="/login"
           class="top-bar-link"
-          @click="store.showSidebar && store.toggleSidebar()">
+          @click="store.showSidebar && store.toggleSidebar()"
+        >
           <span>Log In</span>
         </router-link>
       </template>
 
       <template v-if="authStore.isLoggedIn">
-        <router-link
-          to="/profile"
-          class="top-bar-link">
+        <router-link to="/profile" class="top-bar-link">
           <span>Profile</span>
         </router-link>
         <router-link
           v-if="authStore.isAdmin"
           to="/admin"
           class="top-bar-link"
-          @click="store.showSidebar && store.toggleSidebar()">
+          @click="store.showSidebar && store.toggleSidebar()"
+        >
           <span>Admin</span>
         </router-link>
-        <a
-          href="#"
-          class="top-bar-link logout-link"
-          @click.prevent="handleLogout">
+        <a href="#" class="top-bar-link logout-link" @click.prevent="handleLogout">
           <span>Logout</span>
         </a>
       </template>
     </nav>
 
     <div class="cart-section">
-      <a
-        href="#"
-        class="top-bar-cart-link"
-        @click.prevent="store.toggleSidebar()">
+      <a href="#" class="top-bar-cart-link" @click.prevent="store.toggleSidebar()">
         <i class="icofont-cart-alt icofont-1x"></i>
         <span>Cart ({{ store.totalQuantity }})</span>
       </a>
-      <div
-        v-if="authStore.isLoggedIn"
-        class="user-info">
+      <div v-if="authStore.isLoggedIn" class="user-info">
         <span class="welcome-text">Welcome, {{ authStore.user.firstName }}!</span>
       </div>
     </div>
@@ -116,49 +107,49 @@
 </template>
 
 <script>
-  import { onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { useAuthStore } from '@/stores/authStore';
-  import { useEcommerceStore } from '@/stores/ecommerce';
-  import Sidebar from '@/components/Sidebar.vue';
-  import TokenExpirationWarning from './components/TokenExpirationWarning.vue';
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
+import { useEcommerceStore } from '@/stores/ecommerce'
+import Sidebar from '@/components/Sidebar.vue'
+import TokenExpirationWarning from './components/TokenExpirationWarning.vue'
 
-  export default {
-    components: {
-      Sidebar,
-      TokenExpirationWarning,
-    },
+export default {
+  components: {
+    Sidebar,
+    TokenExpirationWarning,
+  },
 
-    setup() {
-      const authStore = useAuthStore();
-      const store = useEcommerceStore();
-      const router = useRouter();
+  setup() {
+    const authStore = useAuthStore()
+    const store = useEcommerceStore()
+    const router = useRouter()
 
-      const handleLogout = async () => {
-        authStore.logout();
-        router.push('/login?logoutSuccess=true');
-      };
+    const handleLogout = async () => {
+      authStore.logout()
+      router.push('/login?logoutSuccess=true')
+    }
 
-      onMounted(async () => {
-        try {
-          authStore.initializeAuth();
-          await store.initializeStore();
-        } catch (error) {
-          console.error('Failed to initialize', error);
-        }
-      });
+    onMounted(async () => {
+      try {
+        authStore.initializeAuth()
+        await store.initializeStore()
+      } catch (error) {
+        console.error('Failed to initialize', error)
+      }
+    })
 
-      return {
-        store,
-        authStore,
-        handleLogout,
-      };
-    },
-  };
+    return {
+      store,
+      authStore,
+      handleLogout,
+    }
+  },
+}
 </script>
 
 <style>
-  #app {
+#app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

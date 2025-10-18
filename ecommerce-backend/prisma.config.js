@@ -8,6 +8,6 @@ export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
   migrations: {
     path: path.join('db', 'migrations'),
+    seed: 'node prisma/seed.js',
   },
-  seed: 'node prisma/seed.js',
 });

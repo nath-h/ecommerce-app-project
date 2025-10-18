@@ -32,6 +32,7 @@ model Product {
   type        ProductType
   icon        String      @default("spoon-and-fork")
   isActive    Boolean     @default(true)
+  isFeatured  Boolean     @default(false)
   stock       Int         @default(3)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
