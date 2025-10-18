@@ -106,6 +106,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
         }
         const products = await response.json();
         this.inventory = products;
+        this.inventory.filter(p => p.isActive);
       } catch (error) {
         this.error = error.message;
       } finally {

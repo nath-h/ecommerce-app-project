@@ -468,8 +468,8 @@
                       disabled>
                       Select an option...
                     </option>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
+                    <option :value="true">Yes</option>
+                    <option :value="false">No</option>
                   </select>
                 </div>
               </div>
@@ -655,7 +655,7 @@
     minOrder: '',
     maxDiscount: '',
     expiresAt: '',
-    isActive: true,
+    isActive: '',
   });
 
   const productForm = reactive({
@@ -675,8 +675,8 @@
     phone: '',
     address: '',
     password: '',
-    isAdmin: false,
-    isActive: true,
+    isAdmin: '',
+    isActive: '',
   });
 
   const message = reactive({
@@ -873,7 +873,7 @@
       price: formatPrice(product.price),
       icon: product.icon,
       description: product.description || '',
-      isActive: product.isActive,
+      isActive: product.isActive.toString(),
       stock: product.stock,
     });
 

@@ -15,7 +15,6 @@
           Admin product view UI (ProductView page except an admin version) - clicking on it can open admin actions such as disabling, changing stock, updating price
           Allow admin to add a product to recommended, will need to add a isRecommended flag in db
           Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
-          Add/remove items from display (AdminAction AdminActionType DISABLED/UPDATED_PRODUCT product.isActive = false)
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)
           
