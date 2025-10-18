@@ -1,27 +1,13 @@
 <template>
   <main class="wrapper">
     <h1>Past Orders</h1>
-    <div
-      v-if="loading"
-      class="loading-state">
+    <div v-if="loading" class="loading-state">
       <p>Loading your orders...</p>
     </div>
 
-    <div
-      v-else-if="error"
-      class="error-state">
+    <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button
-        @click="fetchOrders"
-        class="btn btn-secondary">
-        Try again
-      </button>
-      <router-link
-        to="/login"
-        class="btn btn-primary"
-        style="margin-left: 20px">
-        Login
-      </router-link>
+      <router-link to="/login" class="btn btn-primary"> Login </router-link>
     </div>
 
     <div v-else-if="orders.length > 0">
@@ -31,15 +17,13 @@
           v-if="pagination.pages > 1 && pagination.page < pagination.pages"
           @click="loadMore"
           class="btn btn-secondary"
-          :disabled="loadingMore">
+          :disabled="loadingMore"
+        >
           {{ loadingMore ? 'Loading...' : 'Load More' }}
         </button>
       </div>
 
-      <div
-        v-for="order in orders"
-        :key="order.id"
-        class="order-section">
+      <div v-for="order in orders" :key="order.id" class="order-section">
         <div class="order-header">
           <div class="order-header-top">
             <div>
@@ -77,16 +61,15 @@
             </div>
 
             <div class="order-actions">
-              <router-link
-                :to="`/order/${order.id}`"
-                class="btn btn-outline">
+              <router-link :to="`/order/${order.id}`" class="btn btn-outline">
                 View Details
               </router-link>
               <button
                 v-if="canCancelOrder(order)"
                 @click="cancelOrder(order.id)"
                 class="btn btn-danger"
-                :disabled="cancellingOrders.includes(order.id)">
+                :disabled="cancellingOrders.includes(order.id)"
+              >
                 {{ cancellingOrders.includes(order.id) ? 'Cancelling...' : 'Cancel order' }}
               </button>
             </div>
@@ -105,18 +88,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="item in order.orderItems"
-              :key="`{order.id}-${item.id}`">
+            <tr v-for="item in order.orderItems" :key="`{order.id}-${item.id}`">
               <td><i :class="`icofont-${item.product.icon} icofont-4x`"></i></td>
               <td>{{ item.product.name }}</td>
               <td>${{ formatPrice(item.price) }}</td>
               <td>{{ item.quantity }}</td>
               <td>${{ formatPrice(item.price * item.quantity) }}</td>
               <td>
-                <button
-                  class="btn btn-dark"
-                  @click="addToCart(item.product.id, item.quantity)">
+                <button class="btn btn-dark" @click="addToCart(item.product.id, item.quantity)">
                   Add to Cart
                 </button>
               </td>
@@ -124,222 +103,207 @@
           </tbody>
         </table>
 
-        <button
-          class="btn btn-dark"
-          @click="addAllToCart(order)">
+        <button class="btn btn-dark" @click="addAllToCart(order)">
           Add all items to your cart
         </button>
 
-        <div
-          v-if="order.discount && order.discount > 0"
-          class="savings-display">
+        <div v-if="order.discount && order.discount > 0" class="savings-display">
           You saved: {{ $formatCurrency(order.discount) }}
           <span v-if="order.couponCode">using {{ order.couponCode }}!</span>
         </div>
       </div>
     </div>
 
-    <div
-      v-else
-      class="empty-state">
+    <div v-else class="empty-state">
       <p>No past orders to display</p>
-      <router-link
-        to="/"
-        class="btn btn-primary">
-        Start Shopping
-      </router-link>
+      <router-link to="/" class="btn btn-primary"> Start Shopping </router-link>
     </div>
 
-    <div
-      v-if="message.show"
-      :class="['toast', `toast-${message.type}`]">
+    <div v-if="message.show" :class="['toast', `toast-${message.type}`]">
       {{ message.text }}
     </div>
   </main>
 </template>
 
 <script>
-  import { useEcommerceStore } from '@/stores/ecommerce';
-  import { useAuthStore } from '@/stores/authStore';
-  import { ref, onMounted, computed, reactive } from 'vue';
+import { useEcommerceStore } from '@/stores/ecommerce'
+import { useAuthStore } from '@/stores/authStore'
+import { ref, onMounted, computed, reactive } from 'vue'
 
-  export default {
-    name: 'PastOrders',
-    setup() {
-      const ecommerceStore = useEcommerceStore();
-      const authStore = useAuthStore();
+export default {
+  name: 'PastOrders',
+  setup() {
+    const ecommerceStore = useEcommerceStore()
+    const authStore = useAuthStore()
 
-      const orders = ref([]);
-      const loading = ref(true);
-      const loadingMore = ref(false);
-      const error = ref(null);
-      const cancellingOrders = ref([]);
-      const pagination = ref({
-        page: 1,
-        limit: 10,
-        total: 0,
-        pages: 0,
-      });
-      const message = reactive({
-        show: false,
-        text: '',
-        type: 'success',
-        timeoutId: null,
-      });
+    const orders = ref([])
+    const loading = ref(true)
+    const loadingMore = ref(false)
+    const error = ref(null)
+    const cancellingOrders = ref([])
+    const pagination = ref({
+      page: 1,
+      limit: 10,
+      total: 0,
+      pages: 0,
+    })
+    const message = reactive({
+      show: false,
+      text: '',
+      type: 'success',
+      timeoutId: null,
+    })
 
-      const totalOrders = computed(() => pagination.value.total);
+    const totalOrders = computed(() => pagination.value.total)
 
-      const fetchOrders = async (page = 1, append = false) => {
-        if (page === 1) {
-          loading.value = true;
+    const fetchOrders = async (page = 1, append = false) => {
+      if (page === 1) {
+        loading.value = true
+      } else {
+        loadingMore.value = true
+      }
+
+      error.value = null
+
+      try {
+        const data = await ecommerceStore.fetchUserOrders(page, pagination.value.limit)
+
+        if (append) {
+          orders.value = [...orders.value, ...data.orders]
         } else {
-          loadingMore.value = true;
+          orders.value = data.orders
         }
 
-        error.value = null;
+        pagination.value = data.pagination
+      } catch (error) {
+        console.error('Error fetching orders:', error)
+        error.value = error.message || 'Failed to load orders'
+      } finally {
+        loading.value = false
+        loadingMore.value = false
+      }
+    }
 
-        try {
-          const data = await ecommerceStore.fetchUserOrders(page, pagination.value.limit);
+    const loadMore = () => {
+      if (pagination.value.page < pagination.value.pages) {
+        fetchOrders(pagination.value.page + 1, true)
+      }
+    }
 
-          if (append) {
-            orders.value = [...orders.value, ...data.orders];
-          } else {
-            orders.value = data.orders;
-          }
+    const formatDate = (dateString) => {
+      const date = new Date(dateString)
+      return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString()
+    }
 
-          pagination.value = data.pagination;
-        } catch (error) {
-          console.error('Error fetching orders:', error);
-          error.value = error.message || 'Failed to load orders';
-        } finally {
-          loading.value = false;
-          loadingMore.value = false;
-        }
-      };
+    const formatStatus = (status) => {
+      return status.charAt(0) + status.slice(1).toLowerCase()
+    }
 
-      const loadMore = () => {
-        if (pagination.value.page < pagination.value.pages) {
-          fetchOrders(pagination.value.page + 1, true);
-        }
-      };
+    const formatPrice = (price) => {
+      return parseFloat(price).toFixed(2)
+    }
 
-      const formatDate = dateString => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
-      };
+    const addToCart = (productId, quantity) => {
+      const success = ecommerceStore.addToCart(productId, quantity)
+      if (!success) {
+        showMessage('Unable to add item to cart. Check stock availability.', 'error')
+      }
+    }
 
-      const formatStatus = status => {
-        return status.charAt(0) + status.slice(1).toLowerCase();
-      };
-
-      const formatPrice = price => {
-        return parseFloat(price).toFixed(2);
-      };
-
-      const addToCart = (productId, quantity) => {
-        const success = ecommerceStore.addToCart(productId, quantity);
+    const addAllToCart = (order) => {
+      let failedItems = []
+      order.orderItems.forEach((item) => {
+        const success = ecommerceStore.addToCart(item.product.id, item.quantity)
         if (!success) {
-          showMessage('Unable to add item to cart. Check stock availability.', 'error');
+          failedItems.push(item.product.name)
         }
-      };
+      })
 
-      const addAllToCart = order => {
-        let failedItems = [];
-        order.orderItems.forEach(item => {
-          const success = ecommerceStore.addToCart(item.product.id, item.quantity);
-          if (!success) {
-            failedItems.push(item.product.name);
-          }
-        });
+      if (failedItems.length > 0) {
+        showMessage(
+          `Could not add some items to cart: ${failedItems.join(', ')}. Check stock availability.`,
+          'error',
+        )
+      }
+    }
 
-        if (failedItems.length > 0) {
-          // message.value = `Could not add some items to cart: ${failedItems.join(
-          //   ', '
-          //   )}. Check stock availability or try again.`;
-          showMessage(
-            `Could not add some items to cart: ${failedItems.join(', ')}. Check stock availability.`,
-            'error'
-          );
+    const hasOrderDiscount = (order) => {
+      return order.discount && parseFloat(order.discount) > 0
+    }
+
+    const showMessage = (text, type = 'success') => {
+      if (message.timeoutId) {
+        clearTimeout(message.timeoutId)
+      }
+
+      message.show = true
+      message.text = text
+      message.type = type
+      message.timeoutId = setTimeout(() => {
+        message.show = false
+        message.timeoutId = null
+      }, 3000)
+    }
+
+    const canCancelOrder = (order) => {
+      return ['PENDING'].includes(order.status)
+    }
+
+    const cancelOrder = async (orderId) => {
+      if (cancellingOrders.value.includes(orderId)) return
+
+      cancellingOrders.value.push(orderId)
+
+      try {
+        await ecommerceStore.cancelOrder(orderId)
+
+        const order = orders.value.find((o) => o.id === orderId)
+        if (order) {
+          order.status = 'CANCELLED'
         }
-      };
+        showMessage('Order cancelled successfully', 'success')
+      } catch (error) {
+        showMessage(error.message, 'error')
+      } finally {
+        cancellingOrders.value = cancellingOrders.value.filter((id) => id !== orderId)
+      }
+    }
 
-      const hasOrderDiscount = order => {
-        return order.discount && parseFloat(order.discount) > 0;
-      };
+    onMounted(() => {
+      if (authStore.user) {
+        fetchOrders()
+      } else {
+        error.value = 'Please log in to view your orders'
+        loading.value = false
+      }
+    })
 
-      const showMessage = (text, type = 'success') => {
-        if (message.timeoutId) {
-          clearTimeout(message.timeoutId);
-        }
-
-        message.show = true;
-        message.text = text;
-        message.type = type;
-        message.timeoutId = setTimeout(() => {
-          message.show = false;
-          message.timeoutId = null;
-        }, 3000);
-      };
-
-      const canCancelOrder = order => {
-        return ['PENDING'].includes(order.status);
-      };
-
-      const cancelOrder = async orderId => {
-        if (cancellingOrders.value.includes(orderId)) return;
-
-        cancellingOrders.value.push(orderId);
-
-        try {
-          await ecommerceStore.cancelOrder(orderId);
-
-          const order = orders.value.find(o => o.id === orderId);
-          if (order) {
-            order.status = 'CANCELLED';
-          }
-          showMessage('Order cancelled successfully', 'success');
-        } catch (error) {
-          showMessage(error.message, 'error');
-        } finally {
-          cancellingOrders.value = cancellingOrders.value.filter(id => id !== orderId);
-        }
-      };
-
-      onMounted(() => {
-        if (authStore.user) {
-          fetchOrders();
-        } else {
-          error.value = 'Please log in to view your orders';
-          loading.value = false;
-        }
-      });
-
-      return {
-        orders,
-        loading,
-        loadingMore,
-        error,
-        message,
-        cancellingOrders,
-        pagination,
-        totalOrders,
-        fetchOrders,
-        loadMore,
-        formatDate,
-        formatStatus,
-        formatPrice,
-        addAllToCart,
-        addToCart,
-        hasOrderDiscount,
-        canCancelOrder,
-        cancelOrder,
-      };
-    },
-  };
+    return {
+      orders,
+      loading,
+      loadingMore,
+      error,
+      message,
+      cancellingOrders,
+      pagination,
+      totalOrders,
+      fetchOrders,
+      loadMore,
+      formatDate,
+      formatStatus,
+      formatPrice,
+      addAllToCart,
+      addToCart,
+      hasOrderDiscount,
+      canCancelOrder,
+      cancelOrder,
+    }
+  },
+}
 </script>
 
 <style scoped>
-  .wrapper {
+.wrapper {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
@@ -355,12 +319,10 @@
 }
 
 .order-section {
-
   margin-bottom: 40px;
   padding: 20px;
   border: 6px solid #ddd;
   border-radius: 8px;
-
 }
 
 .order-header {
@@ -379,9 +341,7 @@
   flex-direction: column;
   align-items: center;
   position: relative;
-  
 }
-
 
 .order-date,
 .order-customer,
@@ -446,7 +406,7 @@
 
 .product-table {
   width: 100%;
-  border-collapse: collapse;;
+  border-collapse: collapse;
   margin-bottom: 10px;
   border-radius: 8px;
   overflow: hidden;
@@ -584,10 +544,6 @@
     flex-direction: column;
     gap: 15px;
   }
-
-  
-
-  
 
   .order-actions {
     align-items: stretch;
