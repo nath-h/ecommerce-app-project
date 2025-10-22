@@ -1,17 +1,15 @@
 <template>
   <main class="wrapper">
-    <div class="admin-dashboard">
-      <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <p>Manage users and monitor system activities</p>
-      </header>
-
       <div v-if="!authStore.isAdmin" class="access-denied">
         <h2>Access denied</h2>
         <p>You need administrator privileges to access this page.</p>
       </div>
-
-      <div v-else class="admin-content">
+    <div v-else class="admin-dashboard">
+      <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p>Manage users and monitor system activities</p>
+      </header>
+      <div class="admin-content">
         <nav class="tab-nav">
           <button
             :class="['tab-btn', { active: activeTab === 'users' }]"
@@ -32,6 +30,12 @@
             Coupon Management
           </button>
           <button
+            :class="['tab-btn', { active: activeTab === 'orders' }]"
+            @click="setActiveTab('orders')"
+          >
+            Order Management
+          </button>
+          <button
             :class="['tab-btn', { active: activeTab === 'actions' }]"
             @click="setActiveTab('actions')"
           >
@@ -41,7 +45,7 @@
 
         <section v-if="activeTab === 'users'" class="tab-content">
           <div class="form-section">
-            <h2>{{ editMode ? 'Edit User' : 'Add new user' }}</h2>
+            <h2>{{ editingUserId ? 'Edit User' : 'Add new user' }}</h2>
 
             <form @submit.prevent="handleUserSubmit" class="user-form">
               <div class="form-grid">
@@ -70,7 +74,7 @@
                   <input v-model="userForm.address" type="text" required :disabled="isLoading" />
                 </div>
 
-                <div v-if="!editMode" class="form-field">
+                <div v-if="!editingUserId" class="form-field">
                   <label>Password *</label>
                   <input
                     v-model="userForm.password"
@@ -96,11 +100,11 @@
 
               <div class="form-actions">
                 <button type="submit" :disabled="isLoading" class="btn btn-primary">
-                  {{ isLoading ? 'Saving...' : editMode ? 'Update User' : 'Create User' }}
+                  {{ isLoading ? 'Saving...' : editingUserId ? 'Update User' : 'Create User' }}
                 </button>
 
                 <button
-                  v-if="editMode"
+                  v-if="editingUserId"
                   type="button"
                   @click="resetUserForm"
                   :disabled="isLoading"
@@ -200,7 +204,7 @@
                     :disabled="isLoading"
                     :max="couponForm.type === 'PERCENTAGE' ? 100 : 9999.99"
                     :placeholder="couponForm.type === 'PERCENTAGE' ? '10(%)' : '10.00'"
-                    @input="formatDecimal"
+                     @blur="couponForm.value = toTwoDecimals(couponForm['value'])"
                   />
                 </div>
 
@@ -213,7 +217,7 @@
                     :disabled="isLoading"
                     placeholder="50.00"
                     max="9999.99"
-                    @input="formatDecimal"
+                    @blur="couponForm.minOrder = toTwoDecimals(couponForm['minOrder'])"
                   />
                 </div>
 
@@ -226,7 +230,7 @@
                     :disabled="isLoading"
                     placeholder="100.00"
                     max="9999.99"
-                    @input="formatDecimal"
+                    @blur="couponForm.maxDiscount = toTwoDecimals(couponForm['maxDiscount'])"
                   />
                 </div>
 
@@ -308,10 +312,10 @@
                           ? ''
                           : coupon.minOrder === '0'
                             ? ''
-                            : `$${coupon.minOrder}`
+                            : `$${parseFloat(coupon.minOrder).toFixed(2)}`
                       }}
                     </td>
-                    <td>{{ coupon.maxDiscount === null ? '' : `$${coupon.maxDiscount}` }}</td>
+                    <td>{{ coupon.maxDiscount === null ? '' : `$${parseFloat(coupon.maxDiscount).toFixed(2)}` }}</td>
                     <td>
                       <span
                         :class="[
@@ -387,7 +391,7 @@
                     required
                     :disabled="isLoading"
                     placeholder="0.00"
-                    @input="formatDecimal"
+                    @blur="productForm.price = toTwoDecimals(productForm['price'])"
                   />
                 </div>
 
@@ -479,7 +483,7 @@
                     <td>{{ product.icon }}</td>
                     <td>{{ product.name }}</td>
                     <td>{{ formatProductType(product.type) }}</td>
-                    <td>${{ formatPrice(product.price) }}</td>
+                    <td>${{ toTwoDecimals(product.price) }}</td>
                     <td>
                       <span
                         :class="[
@@ -522,6 +526,204 @@
           </div>
         </section>
 
+        <section v-if="activeTab === 'orders'" class="tab-content">
+          <div class="form-section">
+            <h2>{{ editingOrderId ? 'Edit Order' : 'Create new order' }}</h2>
+
+            <form @submit.prevent="handleOrderSubmit" class="order-form">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>User ID (Empty will be guest order)</label>
+                  <input
+                    v-model="orderForm.userId"
+                    type="number"
+                    :disabled="isLoading"
+                    placeholder="UserID for customer order"
+                  />
+                </div>
+
+                <div class="form-field">
+                  <label>Subtotal *</label>
+                  <input v-model="orderForm.subtotal"
+                  type="number"
+                  step="0.01"
+                  required 
+                  :disabled="isLoading"
+                  placeholder="Subtotal for order"
+                  @blur="orderForm.subtotal = toTwoDecimals(orderForm['subtotal'])">
+                  </input>
+                </div>
+
+                 <div class="form-field">
+                  <label>Discount</label>
+                  <input v-model="orderForm.discount"
+                  type="number"
+                  step="0.01"
+                  :disabled="isLoading"
+                  placeholder="Discount for order"
+                  @blur="orderForm.discount = toTwoDecimals(orderForm['discount'])">
+                  </input>
+                </div>
+
+                <div class="form-field">
+                  <label>Total *</label>
+                  <input v-model="orderForm.total"
+                  type="number"
+                  step="0.01"
+                  required 
+                  :disabled="isLoading"
+                  placeholder="Total for order"
+                  @blur="orderForm.total = toTwoDecimals(orderForm['total'])">
+                  </input>
+                </div>
+
+              <div class="form-field">
+                  <label>Order Status *</label>
+                  <select v-model="orderForm.status" required :disabled="isLoading">
+                    <option value="" disabled>Select order status...</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="SHIPPED">SHIPPED</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+
+                 <div class="form-field">
+                  <label>Notes</label>
+                  <input v-model="orderForm.notes"
+                  type="text"
+                  :disabled="isLoading"
+                  placeholder="Notes for order">
+                  </input>
+                </div>
+
+                 <div class="form-field">
+                  <label>Coupon code</label>
+                  <input v-model="orderForm.couponCode"
+                  type="text"
+                  :disabled="isLoading"
+                  placeholder="Coupon code for order">
+                  </input>
+                </div>
+
+                <div class="form-field">
+                  <label>Customer Name *</label>
+                  <textarea
+                    v-model="orderForm.customerName"
+                    required
+                    :disabled="isLoading"
+                    rows="1"
+                    placeholder="Enter customers first and last name..."
+                  ></textarea>
+                </div>
+
+              <div class="form-field">
+            <label>Customer Email *</label>
+            <input
+              v-model="orderForm.customerEmail"
+              type="email"
+              required
+              :disabled="isLoading"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="phone">Customer Phone *</label>
+            <input
+              v-model="orderForm.customerPhone"
+              type="tel"
+              required
+              :disabled="isLoading"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="phone">Customer Address *</label>
+            <input
+              v-model="orderForm.customerAddress"
+              type="text"
+              required
+              :disabled="isLoading"
+            />
+          </div>
+          </div>
+
+              <div class="form-actions">
+                <button type="submit" :disabled="isLoading" class="btn btn-primary">
+                  {{
+                    isLoading ? 'Saving...' : editingOrderId ? 'Update order' : 'Create order'
+                  }}
+                </button>
+
+                <button
+                  v-if="editingOrderId"
+                  type="button"
+                  @click="resetOrderForm"
+                  :disabled="isLoading"
+                  class="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="orders-section">
+            <h2>All orders</h2>
+            <div v-if="loadingOrders" class="loading-state">Loading products...</div>
+
+            <div v-else class="table-wrapper">
+              <table class="orders-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>User ID</th>
+                    <th>Subtotal</th>
+                    <th>Total</th>
+                    <th>Notes</th>
+                    <th>Coupon Code</th>
+                    <th>Customer Name</th>
+                    <th>Customer Email</th>
+                    <th>Customer Phone</th>
+                    <th>Customer Address</th>
+                    <th>Order Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="order in orders" :key="order.id">
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.userId }}</td>
+                    <td>${{ parseFloat(order.subtotal).toFixed(2) }}</td>
+                    <td>${{ parseFloat(order.total).toFixed(2) }}</td>
+                    <td>{{ order.notes }}</td>
+                    <td>{{ order.couponCode }}</td>
+                    <td>{{ order.customerName }}</td>
+                    <td>{{ order.customerEmail }}</td>
+                    <td>{{ order.customerPhone }}</td>
+                    <td>{{ order.customerAddress }}</td>
+                    <td>
+                      <span :class="getOrderStatusBadge(order.status)">
+                        {{ order.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        @click="editOrder(order)"
+                        :disabled="isLoading"
+                        class="btn btn-sb btn-outline"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section v-if="activeTab === 'actions'" class="tab-content">
           <h2>Admin Actions Log</h2>
           <div v-if="loadingActions" class="loading-state">Loading actions...</div>
@@ -549,7 +751,7 @@
                   <td>{{ action.admin.firstName }} {{ action.admin.lastName }}</td>
                   <td>{{ action.admin.id }}</td>
                   <td>
-                    <span :class="['badge', getBadgeClass(action.action)]">
+                    <span :class="getBadgeClass(action.action)">
                       {{ formatActionType(action.action) }}
                     </span>
                   </td>
@@ -581,17 +783,19 @@ const store = useEcommerceStore()
 const activeTab = ref('users')
 const users = ref([])
 const products = ref([])
+const orders = ref([])
 const adminActions = ref([])
 const isLoading = ref(false)
 const loadingUsers = ref(false)
 const loadingActions = ref(false)
 const loadingProducts = ref(false)
-const editMode = ref(false)
+const loadingOrders = ref(false)
 const editingUserId = ref(null)
 const coupons = ref([])
 const loadingCoupons = ref(false)
 const editingCouponId = ref(null)
 const editingProductId = ref(null)
+const editingOrderId = ref(null)
 
 const couponForm = reactive({
   code: '',
@@ -610,8 +814,8 @@ const productForm = reactive({
   price: '',
   icon: '',
   description: '',
-  isActive: '',
-  isFeatured: '',
+  isActive: false,
+  isFeatured: false,
   stock: '',
 })
 
@@ -626,6 +830,20 @@ const userForm = reactive({
   isActive: '',
 })
 
+const orderForm = reactive({
+  userId: null,
+  subtotal: '',
+  discount: null,
+  total: '',
+  status: '',
+  notes: null,
+  couponCode: null,
+  customerName: '',
+  customerEmail: '',
+  customerPhone: '',
+  customerAddress: '',
+})
+
 const message = reactive({
   show: false,
   text: '',
@@ -634,10 +852,11 @@ const message = reactive({
 
 const getBadgeClass = (action) => {
   const actionType = action.toLowerCase()
-  if (actionType.includes('create')) return 'badge-created'
-  if (actionType.includes('update')) return 'badge-updated'
-  if (actionType.includes('disable')) return 'badge-disabled'
-  if (actionType.includes('reactivated')) return 'badge-reactivated'
+  if (actionType.includes('create')) return 'badge badge-created'
+  if (actionType.includes('update')) return 'badge badge-updated'
+  if (actionType.includes('cancel')) return 'badge badge-cancelled'
+  if (actionType.includes('disable')) return 'badge badge-disabled'
+  if (actionType.includes('reactivated')) return 'badge badge-reactivated'
 }
 
 const setActiveTab = (tab) => {
@@ -648,6 +867,9 @@ const setActiveTab = (tab) => {
     fetchCoupons()
   } else if (tab === 'products' && products.value.length === 0) {
     fetchProducts()
+  }
+  else if (tab === 'orders' && orders.value.length === 0) {
+    fetchOrders()
   }
 }
 
@@ -738,6 +960,93 @@ const fetchProducts = async () => {
   }
 }
 
+const fetchOrders = async () => {
+  loadingOrders.value = true
+
+  try {
+    const response = await makeAuthenticatedRequest('/api/orders/admin')
+    const data = await response.json()
+
+    if (response.ok) {
+      orders.value = data.orders
+    } else {
+      throw new Error(data.error || 'Failed to fetch orders')
+    }
+  } catch (error) {
+    console.error('Error fetching orders', error)
+    showMessage(error.message, 'error')
+  } finally {
+    loadingOrders.value = false
+  }
+}
+
+const handleOrderSubmit = async () => {
+  isLoading.value = true
+
+  try {
+    const url = editingOrderId.value ? `/api/orders/admin/${editingOrderId.value}` : '/api/orders/admin'
+    const method = editingOrderId.value ? 'PUT' : 'POST'
+    const body = { ...orderForm }
+
+    if(body.userId === '') {
+      body.userId = null
+    }
+
+    let changes = {}
+    if (editingOrderId.value) {
+      const currentOrder = orders.value.find((o) => o.id === editingOrderId.value)
+      if (currentOrder) {
+        Object.keys(body).forEach((key) => {
+          if (body[key] !== currentOrder[key]) {
+            changes[key] = {
+              from: currentOrder[key],
+              to: body[key],
+            }
+          }
+        })
+      }
+    }
+
+    const response = await makeAuthenticatedRequest(url, {
+      method,
+      body: JSON.stringify(body),
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      showMessage(data.message)
+      resetOrderForm()
+      await Promise.all([fetchOrders(), fetchAdminActions()])
+    } else {
+      throw new Error(data.error || 'Operation failed')
+    }
+  } catch (error) {
+    console.error('Error submitting order:', error)
+    showMessage(error.message, 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const getOrderStatusBadge = (status) => {
+  switch (status) {
+    case 'PENDING':
+      return 'badge status-pending'
+    case 'PREPARING':
+      return 'badge status-preparing'
+    case 'CONFIRMED':
+      return 'badge status-confirmed'
+    case 'SHIPPED':
+      return 'badge status-shipped'
+    case 'DELIVERED':
+      return 'badge status-delivered'
+    case 'CANCELLED':
+      return 'badge status-cancelled'
+  }
+}
+
+
 const handleCouponSubmit = async () => {
   isLoading.value = true
 
@@ -751,7 +1060,7 @@ const handleCouponSubmit = async () => {
       type: couponForm.type,
       value: parseFloat(couponForm.value),
       description: couponForm.description,
-      minOrder: couponForm.minOrder === '' ? null : parseFloat(couponForm.minOrder),
+      minOrder: couponForm.minOrder === null ? 0 : parseFloat(couponForm.minOrder),
       maxDiscount: couponForm.maxDiscount === '' ? null : parseFloat(couponForm.maxDiscount),
       isActive: couponForm.isActive,
       expiresAt: couponForm.expiresAt,
@@ -796,13 +1105,13 @@ const editCoupon = (coupon) => {
   Object.assign(couponForm, {
     code: coupon.code,
     type: coupon.type,
-    value: formatPrice(coupon.value),
+    value: toTwoDecimals(coupon.value),
     description: coupon.description || '',
-    minOrder: coupon.minOrder ? formatPrice(coupon.minOrder) : '',
+    minOrder: coupon.minOrder === 0 || coupon.minOrder === '0' ? null : toTwoDecimals(coupon.minOrder),
     maxDiscount:
-      coupon.maxDiscount && parseFloat(coupon.maxDiscount) > 0
-        ? formatPrice(coupon.maxDiscount)
-        : 0,
+      parseFloat(coupon.maxDiscount) > 0
+        ? toTwoDecimals(coupon.maxDiscount)
+        : null,
     expiresAt: formattedDate,
     isActive: coupon.isActive,
   })
@@ -822,7 +1131,7 @@ const editProduct = (product) => {
   Object.assign(productForm, {
     name: product.name,
     type: product.type,
-    price: formatPrice(product.price),
+    price: toTwoDecimals(product.price),
     icon: product.icon,
     description: product.description || '',
     isActive: product.isActive,
@@ -838,17 +1147,6 @@ const editProduct = (product) => {
   })
 }
 
-const formatDecimal = (event) => {
-  let value = event.target.value
-  if (value.includes('.')) {
-    const parts = value.split('.')
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2)
-      event.target.value = value
-      productForm.price = value
-    }
-  }
-}
 
 const handleProductSubmit = async () => {
   isLoading.value = true
@@ -903,8 +1201,8 @@ const resetProductForm = () => {
     price: '',
     icon: '',
     description: '',
-    isActive: '',
-    isFeatured: '',
+    isActive: false,
+    isFeatured: false,
     stock: '',
   })
 }
@@ -933,7 +1231,7 @@ const resetCouponForm = () => {
 }
 
 const formatCouponValue = (coupon) => {
-  return coupon.type === 'PERCENTAGE' ? `${coupon.value}%` : `$${coupon.value}`
+  return coupon.type === 'PERCENTAGE' ? `${parseFloat(coupon.value).toFixed(2)}%` : `$${parseFloat(coupon.value).toFixed(2)}`
 }
 
 const formatCouponType = (type) => {
@@ -968,20 +1266,34 @@ const resetUserForm = () => {
   userForm.password = ''
   userForm.isAdmin = false
   userForm.isActive = false
-  editMode.value = false
   editingUserId.value = null
+}
+
+const resetOrderForm = () => {
+  orderForm.userId = null
+  orderForm.subtotal = ''
+  orderForm.discount = null
+  orderForm.total = ''
+  orderForm.status = ''
+  orderForm.notes = null
+  orderForm.couponCode = null
+  orderForm.customerName = ''
+  orderForm.customerEmail = ''
+  orderForm.customerPhone = ''
+  orderForm.customerAddress = ''
+  editingOrderId.value = null
 }
 
 const handleUserSubmit = async () => {
   isLoading.value = true
 
   try {
-    const url = editMode.value ? `/api/admin/users/${editingUserId.value}` : '/api/admin/users'
-    const method = editMode.value ? 'PUT' : 'POST'
+    const url = editingUserId.value ? `/api/admin/users/${editingUserId.value}` : '/api/admin/users'
+    const method = editingUserId.value ? 'PUT' : 'POST'
     const body = { ...userForm }
 
     let changes = {}
-    if (editMode.value) {
+    if (editingUserId.value) {
       const currentUser = users.value.find((u) => u.id === editingUserId.value)
       if (currentUser) {
         Object.keys(body).forEach((key) => {
@@ -1028,7 +1340,6 @@ const handleUserSubmit = async () => {
 }
 
 const editUser = (user) => {
-  editMode.value = true
   editingUserId.value = user.id
   userForm.firstName = user.firstName
   userForm.lastName = user.lastName
@@ -1038,6 +1349,28 @@ const editUser = (user) => {
   userForm.isAdmin = user.isAdmin
   userForm.isActive = user.isActive
   userForm.password = ''
+
+  const formSection = document.querorderector('.form-section')
+
+  formSection.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+const editOrder = (order) => {
+  orderForm.userId = order.userId
+  orderForm.subtotal = parseFloat(order.subtotal).toFixed(2)
+  orderForm.discount = order.discount
+  orderForm.total = order.total
+  orderForm.status = order.status
+  orderForm.notes = order.notes
+  orderForm.couponCode = order.couponCode
+  orderForm.customerName = order.customerName
+  orderForm.customerEmail = order.customerEmail
+  orderForm.customerPhone = order.customerPhone
+  orderForm.customerAddress = order.customerAddress
+  editingOrderId.value = order.id
 
   const formSection = document.querySelector('.form-section')
 
@@ -1058,9 +1391,11 @@ const formatDate = (dateString) => {
   })
 }
 
-const formatPrice = (price) => {
-  return parseFloat(price).toFixed(2)
+const toTwoDecimals = (value) => {
+  if (value !== '' && value !== null && value !== undefined && value !== NaN);
+      return Number(value).toFixed(2)
 }
+
 
 const formatActionType = (actionType) => {
   if (!actionType) return 'Unknown Action'
@@ -1083,7 +1418,7 @@ const formatActionDetails = (details) => {
             return `<strong>Expires At: </strong>${formatDate(from)} → ${formatDate(to)}`
           }
           if (field === 'price') {
-            return `<strong>Price: </strong>$${formatPrice(from)} → $${formatPrice(to)}`
+            return `<strong>Price: </strong>$${toTwoDecimals(from)} → $${toTwoDecimals(to)}`
           }
           return `<strong>${field}: </strong>${from}→${to}`
         })
@@ -1111,12 +1446,28 @@ const formatActionDetails = (details) => {
       return `<strong>Created coupon: </strong>${parsed.code}<br> <strong>Type: </strong>${parsed.type}<br><strong>Value: </strong>${value}<br> <strong>Expires:</strong> ${expirationText}<br> <strong>Active:</strong> ${parsed.isActive}`
     }
 
+     if (parsed.orderId) {
+      const lines = [
+      parsed.userId != null ? `<strong>User ID: </strong>${parsed.userId}` : null,
+      parsed.total != null ? `
+      <strong>Total: </strong>$${toTwoDecimals(
+        parsed.total
+      )}` : '', 
+      parsed.status != null ? `<strong>Status:</strong> ${parsed.status}` : '',
+      parsed.couponCode != null ? `<strong>Coupon code: </strong>${parsed.couponCode}` : '',
+      parsed.subtotal != null ? `<strong>Subtotal: </strong>$${toTwoDecimals(parsed.subtotal)}` : '',
+      parsed.discount != null ? `<strong>Discount: </strong>$${toTwoDecimals(parsed.discount)}` : ''
+     ].filter(Boolean)
+
+     return lines.join('<br>')
+    }
+
     if (parsed.name) {
       return `<strong>Created product: </strong>${parsed.name}<br> <strong>Icon: </strong>${
         parsed.icon
-      }<br><strong>Type: </strong>${parsed.type}<br> <strong>Price: </strong>$${formatPrice(
-        parsed.price,
-      )}<br> <strong>Active:</strong> ${parsed.isActive}`
+      }<br><strong>Type: </strong>${parsed.type}<br> <strong>Price: </strong>$${toTwoDecimals(
+        parsed.price
+      )}<br> <strong>Active:</strong> ${parsed.isActive} <br> <strong>Featured:</strong> ${parsed.isFeatured}`
     }
     return JSON.stringify(parsed, null, 2).replace(/\n/g, '<br>')
   } catch (error) {
@@ -1130,6 +1481,7 @@ onMounted(() => {
     fetchCoupons()
     fetchAdminActions()
     fetchProducts()
+    fetchOrders()
   }
 })
 </script>
@@ -1221,7 +1573,7 @@ onMounted(() => {
   margin-bottom: 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: none;
+  min-width: 100%;
 }
 
 .form-section h2 {
@@ -1234,7 +1586,8 @@ onMounted(() => {
 
 .user-form,
 .product-form,
-.coupon-form {
+.coupon-form,
+.order-form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -1246,10 +1599,17 @@ onMounted(() => {
   gap: 1.5rem;
 }
 
+.form-grid > .form-field:last-child:nth-child(odd) {
+  grid-column: 1 / span 2;
+  justify-self: center;
+  width: 50%;
+  margin-bottom: 0px;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-field label {
@@ -1297,8 +1657,9 @@ onMounted(() => {
 }
 
 .form-actions {
-  justify-content: flex-start;
-  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
 }
 
 .btn {
@@ -1353,7 +1714,9 @@ onMounted(() => {
 .users-section h2,
 .coupons-section h2,
 .products-section h2,
-.actions-section {
+.actions-section h2,
+.actions-section,
+.orders-section {
   color: #2c3e50;
   margin-bottom: 1rem;
   text-align: center;
@@ -1368,7 +1731,8 @@ onMounted(() => {
 .users-section,
 .coupons-section,
 .products-section,
-.actions-section {
+.actions-section,
+.orders-section {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1381,7 +1745,8 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid #dee2e6;
   width: 100%;
-  max-width: 100%;
+  min-width: 100%;
+
   margin: 0 auto;
   display: flex;
   justify-content: center;
@@ -1390,7 +1755,8 @@ onMounted(() => {
 .users-table,
 .actions-table,
 .coupons-table,
-.products-table {
+.products-table,
+.orders-table {
   width: 100%;
   min-width: 800px;
   table-layout: auto;
@@ -1402,7 +1768,9 @@ onMounted(() => {
 }
 .users-table th,
 .actions-table th,
-.users-table th {
+.users-table th,
+.products-table th,
+.orders-table th {
   text-align: center;
 }
 .users-table th,
@@ -1412,7 +1780,9 @@ onMounted(() => {
 .coupons-table th,
 .coupons-table td,
 .products-table th,
-.products-table td {
+.products-table td,
+.orders-table th,
+.orders-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid gray;
   border-right: 1px solid gray;
@@ -1424,7 +1794,8 @@ onMounted(() => {
 .users-table th,
 .actions-table th,
 .coupons-table th,
-.products-table th {
+.products-table th,
+.orders-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #2c3e50;
@@ -1437,14 +1808,16 @@ onMounted(() => {
 .users-table tbody tr:nth-child(even),
 .actions-table tbody tr:nth-child(even),
 .coupons-table tbody tr:nth-child(even),
-.products-table tbody tr:nth-child(even) {
+.products-table tbody tr:nth-child(even),
+.orders-table tbody tr:nth-child(even) {
   background-color: lightgrey;
 }
 
 .users-table tbody tr:hover,
 .actions-table tbody tr:hover,
 .coupons-table tbody tr:hover,
-.products-table tbody tr:hover {
+.products-table tbody tr:hover,
+.orders-table tbody tr:hover {
   background-color: #e3f2fd;
   transition: background-color 0.2s ease;
 }
@@ -1499,8 +1872,40 @@ onMounted(() => {
   color: #084298;
 }
 
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-preparing {
+  background-color: #fd7e14;
+  color: #fff9c4;
+}
+
+.status-confirmed {
+  background-color: #17a2b8;
+  color: darkblue;
+}
+
+.status-shipped {
+  background-color: #6f42c1;
+  color: #fce4ec;
+}
+
+.status-delivered {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
 .coupon-form textarea,
-.product-form textarea {
+.product-form textarea,
+.order-form textarea {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ced4da;
@@ -1522,7 +1927,8 @@ onMounted(() => {
 }
 
 .coupon-form select,
-.product-form select {
+.product-form select,
+.order-form select {
   padding: 0.75rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -1543,6 +1949,11 @@ onMounted(() => {
 .badge-updated {
   background-color: #cfe2ff;
   color: #084298;
+}
+
+.badge-cancelled {
+  background-color: #f8d7da;
+  color: #842029;
 }
 
 .badge-disabled {

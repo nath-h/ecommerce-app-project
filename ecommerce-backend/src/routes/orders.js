@@ -1,7 +1,205 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import { authenticateToken, requireAdmin } from './auth.js';
+import { logAdminAction } from './admin.js';
 const router = express.Router();
 const prisma = new PrismaClient();
+
+router.use('/admin', authenticateToken, requireAdmin);
+
+router.get('/admin', async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    res.json({ orders });
+  } catch (error) {
+    console.error('Error fetching orders', error);
+    res.status(500).json({ error: 'Internal server error while fetching orders' });
+  }
+});
+
+router.post('/admin', async (req, res) => {
+  try {
+    const {
+      userId,
+      subtotal,
+      discount,
+      total,
+      status,
+      notes,
+      couponCode,
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+    } = req.body;
+
+    if (!subtotal || !total || !status || !customerName || !customerEmail || !customerPhone || !customerAddress) {
+      return res
+        .status(400)
+        .json({ error: 'Subtotal, total, status, name, email, phone and address are required fields' });
+    }
+
+    if (userId) {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        return res.status(409).json({
+          error: 'Error creating order: User with that userID does not exist',
+        });
+      }
+    }
+
+    const newOrder = await prisma.order.create({
+      data: {
+        userId,
+        subtotal: parseFloat(subtotal),
+        discount,
+        total: parseFloat(total),
+        status,
+        notes,
+        couponCode,
+        customerName,
+        customerEmail,
+        customerPhone,
+        customerAddress,
+      },
+    });
+    await logAdminAction(req.user.userId, 'CREATED_ORDER', 'ORDER', newOrder.id, {
+      orderId: newOrder.id,
+      userId: newOrder.userId ? newOrder.userId : null,
+      subtotal: newOrder.subtotal,
+      discount: newOrder.discount,
+      total: newOrder.total,
+      status: newOrder.status,
+      notes: newOrder.notes,
+      couponCode: newOrder.couponCode ? newOrder.couponCode : null,
+      customerName: newOrder.customerName,
+      customerEmail: newOrder.customerEmail,
+      customerPhone: newOrder.customerPhone,
+      customerAddress: newOrder.customerAddress,
+    });
+    res.status(201).json({
+      message: 'Order created successfully',
+      order: newOrder,
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Internal server error while creating order' });
+  }
+});
+
+router.put('/admin/:id', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const {
+      userId,
+      subtotal,
+      discount,
+      total,
+      status,
+      notes,
+      couponCode,
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+    } = req.body;
+
+    const existingOrder = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+    });
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        userId: userId,
+        subtotal: subtotal ? parseFloat(subtotal) : undefined,
+        discount: discount,
+        total: total ? parseFloat(total) : undefined,
+        status: status,
+        notes: notes,
+        couponCode: couponCode,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+      },
+    });
+
+    const changes = {
+      userId: userId !== existingOrder.userId ? { from: existingOrder.userId, to: userId } : undefined,
+      subtotal:
+        parseFloat(subtotal) !== parseFloat(existingOrder.subtotal)
+          ? { from: existingOrder.subtotal, to: parseFloat(subtotal).toFixed(2) }
+          : undefined,
+      discount:
+        parseFloat(discount) !== parseFloat(existingOrder.discount) && discount !== null
+          ? { from: existingOrder.discount, to: parseFloat(discount).toFixed(2) }
+          : undefined,
+      total:
+        parseFloat(total) !== parseFloat(existingOrder.total)
+          ? { from: existingOrder.total, to: parseFloat(total).toFixed(2) }
+          : undefined,
+      status: status !== existingOrder.status ? { from: existingOrder.status, to: status } : undefined,
+      notes: notes !== existingOrder.notes ? { from: existingOrder.notes, to: notes } : undefined,
+      couponCode:
+        couponCode !== existingOrder.couponCode ? { from: existingOrder.couponCode, to: couponCode } : undefined,
+      customerName:
+        customerName !== existingOrder.customerName
+          ? { from: existingOrder.customerName, to: customerName }
+          : undefined,
+      customerEmail:
+        customerEmail !== existingOrder.customerEmail
+          ? { from: existingOrder.customerEmail, to: customerEmail }
+          : undefined,
+      customerPhone:
+        customerPhone !== existingOrder.customerPhone
+          ? { from: existingOrder.customerPhone, to: customerPhone }
+          : undefined,
+      customerAddress:
+        customerAddress !== existingOrder.customerAddress
+          ? { from: existingOrder.customerAddress, to: customerAddress }
+          : undefined,
+    };
+
+    const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
+
+    if (Object.keys(filteredChanges).length > 0) {
+      if (updatedOrder.status === 'CANCELLED') {
+        await logAdminAction(req.user.userId, 'CANCELLED_ORDER', 'ORDER', orderId, {
+          changes: filteredChanges,
+        });
+      } else {
+        await logAdminAction(req.user.userId, 'UPDATED_ORDER', 'ORDER', orderId, {
+          changes: filteredChanges,
+        });
+      }
+    }
+    res.json({
+      message:
+        Object.keys(filteredChanges).length <= 0
+          ? 'No fields were changed, therefore no changes were made'
+          : 'Order updated successfully',
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    res.status(500).json({
+      error: 'Internal server error while updating order',
+    });
+  }
+});
 
 router.post('/', async (req, res) => {
   try {

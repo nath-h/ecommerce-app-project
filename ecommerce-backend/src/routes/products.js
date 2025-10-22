@@ -48,12 +48,12 @@ router.post('/admin', async (req, res) => {
 
     const newProduct = await prisma.product.create({
       data: {
-        name: name,
+        name,
         type,
         price: parseFloat(price),
         description,
-        isActive: isActive,
-        isFeatured: isFeatured,
+        isActive,
+        isFeatured,
         stock: stock,
         icon: icon,
       },
@@ -115,7 +115,7 @@ router.put('/admin/:id', async (req, res) => {
         stock,
         description,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
-        isFeatured: isFeatured !== undefined ? isFeatured : undefined,
+        isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : undefined,
         icon: icon,
       },
     });

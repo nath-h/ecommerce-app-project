@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev": "npm run docker:up && concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd ecommerce-frontend && npm run dev",
     "dev:backend": "cd ecommerce-backend && npm run dev",
+    "dev:restart": "npm run kill:ports && npm run dev",
+    "dev:clean": "npm run docker:down && npm run dev:restart",
+    "kill:ports": "npx kill-port 5000 5173 5432",
     "studio": "cd ecommerce-backend && npx prisma studio",
     "build": "cd ecommerce-frontend && npm run build",
     "preview": "cd ecommerce-frontend && npm run preview",
@@ -19,7 +22,8 @@
     "setup:database": "cd ecommerce-backend && npx prisma generate && npx prisma db push && npx prisma db seed"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "kill-port": "^2.0.1"
   },
   "overrides": {
     "http-proxy": "npm:http-proxy-3@^1.22.0"
