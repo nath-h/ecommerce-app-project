@@ -90,7 +90,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       return state.inventory.filter(
         (product) => product.isFeatured === true && product.isActive === true && product.stock > 0,
       )
-      // .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
     },
   },
 
@@ -245,7 +244,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.validateActiveCoupon()
     },
 
-    //need to implement this clear cart in sidebar
     clearCart() {
       this.cart = []
       this.saveCartToLocalStorage()
@@ -298,7 +296,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    //Might still need to implement this
     removeCoupon() {
       this.activeCoupon = null
       this.couponError = ''
@@ -322,9 +319,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
             userId: authStore.userId || null,
             customerInfo: orderData.customer,
             cartItems: this.enrichedCartItems,
-            coupon: this.activeCoupon
+            couponCode: this.activeCoupon
               ? {
-                  code: this.activeCoupon.code,
+                  couponCode: this.activeCoupon.code,
                   discount: this.couponDiscount,
                   description: this.activeCoupon.description,
                   type: this.activeCoupon.type,
@@ -427,12 +424,12 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    clearAllStoredData() {
+    async clearAllStoredData() {
       try {
         localStorage.removeItem('ecommerce-cart')
         this.cart = []
         const authStore = useAuthStore()
-        authStore.clearAllStoredData()
+        authStore.clearAuthFromStorage()
       } catch (error) {
         console.error('Error clearing localStorage', error)
       }

@@ -32,7 +32,7 @@
           <div class="cell">
             <span
               :class="{
-                'low-stock': product.stock > 0 && product.stock <= 5,
+                'low-stock': product.stock > 0 && product.stock <= 3,
                 'out-of-stock': product.stock <= 0,
               }"
             >

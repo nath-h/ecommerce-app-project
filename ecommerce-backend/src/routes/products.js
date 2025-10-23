@@ -68,7 +68,7 @@ router.post('/admin', async (req, res) => {
       isFeatured: newProduct.isFeatured,
     });
     res.status(201).json({
-      message: 'Product created successfully',
+      message: 'Product has been created successfully',
       product: newProduct,
     });
   } catch (error) {
@@ -109,14 +109,14 @@ router.put('/admin/:id', async (req, res) => {
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
-        name: name || undefined,
+        name,
         type,
         price: price ? parseFloat(price) : undefined,
         stock,
         description,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
         isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : undefined,
-        icon: icon,
+        icon,
       },
     });
 
@@ -136,14 +136,32 @@ router.put('/admin/:id', async (req, res) => {
 
     const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
 
+    let actionType;
     if (Object.keys(filteredChanges).length > 0) {
-      await logAdminAction(req.user.userId, 'UPDATED_PRODUCT', 'PRODUCT', productId, {
-        changes: filteredChanges,
-      });
+      if (changes.isActive && changes.isActive.to === false) {
+        actionType = 'DEACTIVATED_PRODUCT';
+        await logAdminAction(req.user.userId, actionType, 'PRODUCT', productId, {
+          changes: filteredChanges,
+        });
+      } else if (changes.isActive && changes.isActive.to === true) {
+        actionType = 'REACTIVATED_PRODUCT';
+        await logAdminAction(req.user.userId, actionType, 'PRODUCT', productId, {
+          changes: filteredChanges,
+        });
+      } else {
+        actionType = 'UPDATED_PRODUCT';
+        await logAdminAction(req.user.userId, actionType, 'PRODUCT', productId, {
+          changes: filteredChanges,
+        });
+      }
     }
     res.json({
       message:
-        Object.keys(filteredChanges).length <= 0
+        actionType === 'DEACTIVATED_PRODUCT'
+          ? 'Product has been deactivated successfully'
+          : actionType === 'REACTIVATED_PRODUCT'
+          ? 'Product has been reactivated successfully'
+          : Object.keys(filteredChanges).length <= 0
           ? 'No fields were changed, therefore no changes were made'
           : 'Product updated successfully',
       product: updatedProduct,

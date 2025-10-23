@@ -110,7 +110,7 @@ router.post('/register', async (req, res) => {
         email: newUser.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30m' } //change to 30m
+      { expiresIn: '30m' }
     );
 
     res.status(201).json({
@@ -167,7 +167,7 @@ router.post('/login', async (req, res) => {
         isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30m' } //change to 30m
+      { expiresIn: '30m' }
     );
 
     res.json({
@@ -216,7 +216,7 @@ router.post('/refresh', async (req, res) => {
         isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '30m' } //change to 30m
+      { expiresIn: '30m' }
     );
     res.json({
       message: 'Token refreshed successfully',

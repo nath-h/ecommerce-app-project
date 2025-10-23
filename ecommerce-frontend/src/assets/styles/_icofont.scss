@@ -12,20 +12,19 @@
   font-family: 'IcoFont';
   font-style: 'Regular';
   font-weight: normal;
-  // sass-lint:disable no-duplicate-properties indentation
   src: url('./fonts/icofont.eot');
-  src: url('./fonts/icofont.eot?#iefix') format('embedded-opentype'), url('./fonts/icofont.woff2') format('woff2'),
-    url('./fonts/icofont.woff') format('woff'), url('./fonts/icofont.ttf') format('truetype'),
+  src:
+    url('./fonts/icofont.eot?#iefix') format('embedded-opentype'),
+    url('./fonts/icofont.woff2') format('woff2'),
+    url('./fonts/icofont.woff') format('woff'),
+    url('./fonts/icofont.ttf') format('truetype'),
     url('./fonts/icofont.svg#icofont') format('svg');
-  // sass-lint:enable no-duplicate-properties indentation
 }
 
 [class^='icofont-'],
 [class*=' icofont-'] {
   direction: ltr;
-  // sass-lint:disable no-important
   font-family: 'IcoFont' !important;
-  // sass-lint:enable no-important
   font-style: normal;
   font-variant: normal;
   font-weight: normal;
@@ -38,7 +37,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-// sass-lint:disable brace-style
 .icofont-raddish:before {
   content: '\eb8a';
 }
@@ -133,7 +131,6 @@
 .icofont-10x {
   font-size: 10em;
 }
-// sass-lint:enable brace-style
 
 .icofont-fw {
   width: 1.25em;

@@ -129,7 +129,7 @@ router.post('/admin', async (req, res) => {
       isActive: newCoupon.isActive,
     });
     res.status(201).json({
-      message: 'Coupon created successfully',
+      message: 'Coupon has been created successfully',
       coupon: newCoupon,
     });
   } catch (error) {
@@ -197,7 +197,6 @@ router.put('/admin/:id', async (req, res) => {
         }
         return undefined;
       })(),
-
       expiresAt: (() => {
         if (expiresAt === undefined) return undefined;
 
@@ -217,14 +216,32 @@ router.put('/admin/:id', async (req, res) => {
 
     const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
 
+    let actionType;
     if (Object.keys(filteredChanges).length > 0) {
-      await logAdminAction(req.user.userId, 'UPDATED_COUPON', 'COUPON', couponId, {
-        changes: filteredChanges,
-      });
+      if (changes.isActive && changes.isActive.to === false) {
+        actionType = 'DEACTIVATED_COUPON';
+        await logAdminAction(req.user.userId, actionType, 'COUPON', couponId, {
+          changes: filteredChanges,
+        });
+      } else if (changes.isActive && changes.isActive.to === true) {
+        actionType = 'REACTIVATED_COUPON';
+        await logAdminAction(req.user.userId, actionType, 'COUPON', couponId, {
+          changes: filteredChanges,
+        });
+      } else {
+        actionType = 'UPDATED_COUPON';
+        await logAdminAction(req.user.userId, actionType, 'COUPON', couponId, {
+          changes: filteredChanges,
+        });
+      }
     }
     res.json({
       message:
-        Object.keys(filteredChanges).length <= 0
+        actionType === 'DEACTIVATED_COUPON'
+          ? 'Coupon has been deactivated successfully'
+          : actionType === 'REACTIVATED_COUPON'
+          ? 'Coupon has been reactivated successfully'
+          : Object.keys(filteredChanges).length <= 0
           ? 'No fields were changed, therefore no changes were made'
           : 'Coupon updated successfully',
       coupon: updatedCoupon,

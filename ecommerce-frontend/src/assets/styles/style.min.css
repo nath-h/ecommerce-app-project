@@ -168,8 +168,11 @@ template {
   font-style: normal;
   font-weight: normal;
   src: url('./fonts/modak.eot');
-  src: url('./fonts/modak.eot?#iefix') format('embedded-opentype'), url('./fonts/modak.woff') format('woff'),
-    url('./fonts/modak.ttf') format('truetype'), url('./fonts/modak.svg#modakregular') format('svg');
+  src:
+    url('./fonts/modak.eot?#iefix') format('embedded-opentype'),
+    url('./fonts/modak.woff') format('woff'),
+    url('./fonts/modak.ttf') format('truetype'),
+    url('./fonts/modak.svg#modakregular') format('svg');
 } /*!
  * @package IcoFont
  * @version 1.0.1
@@ -182,8 +185,11 @@ template {
   font-style: 'Regular';
   font-weight: normal;
   src: url('./fonts/icofont.eot');
-  src: url('./fonts/icofont.eot?#iefix') format('embedded-opentype'), url('./fonts/icofont.woff2') format('woff2'),
-    url('./fonts/icofont.woff') format('woff'), url('./fonts/icofont.ttf') format('truetype'),
+  src:
+    url('./fonts/icofont.eot?#iefix') format('embedded-opentype'),
+    url('./fonts/icofont.woff2') format('woff2'),
+    url('./fonts/icofont.woff') format('woff'),
+    url('./fonts/icofont.ttf') format('truetype'),
     url('./fonts/icofont.svg#icofont') format('svg');
 }
 [class^='icofont-'],

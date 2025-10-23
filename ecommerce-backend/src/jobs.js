@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 console.log(`Initializing scheduled jobs`);
 
-cron.schedule('0 * * * *', async () => {
+cron.schedule('33 * * * *', async () => {
   try {
     console.log(`Running coupon expiration check`);
 
@@ -22,7 +22,6 @@ cron.schedule('0 * * * *', async () => {
 
     if (result.count > 0) {
       console.log(`Disabled ${result.count} expired coupons`);
-      // console.log(`${coupon.code} has been disabled}`);
     } else {
       console.log(`No expired coupons found`);
     }

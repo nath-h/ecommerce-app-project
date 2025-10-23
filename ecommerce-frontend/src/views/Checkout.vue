@@ -2,39 +2,20 @@
   <main class="wrapper">
     <h1>Checkout</h1>
 
-    <div
-      v-if="orderError"
-      class="error-message"
-      v-html="orderError"></div>
+    <div v-if="orderError" class="error-message" v-html="orderError"></div>
 
-    <div
-      v-if="cart.length === 0"
-      class="empty-cart">
+    <div v-if="cart.length === 0" class="empty-cart">
       <p>Your cart is empty!</p>
-      <router-link
-        to="/products"
-        class="btn btn-primary">
-        Go Shopping
-      </router-link>
+      <router-link to="/products" class="btn btn-primary"> Go Shopping </router-link>
     </div>
 
     <div v-else>
-      <div
-        v-if="!authStore.user"
-        class="guest-notice">
+      <div v-if="!authStore.user" class="guest-notice">
         <p>You are checking out as a guest.</p>
         <p>
-          <router-link
-            to="/login"
-            class="login-link">
-            Login
-          </router-link>
+          <router-link to="/login" class="login-link"> Login </router-link>
           or
-          <router-link
-            to="/register"
-            class="register-link">
-            Register
-          </router-link>
+          <router-link to="/register" class="register-link"> Register </router-link>
           to save your preferences and view order history.
         </p>
       </div>
@@ -52,9 +33,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="item in enrichedCartItems"
-            :key="item.productId">
+          <tr v-for="item in enrichedCartItems" :key="item.productId">
             <td>{{ item.name }}</td>
             <td>${{ item.price }}</td>
             <td>{{ item.quantity }}</td>
@@ -68,9 +47,7 @@
               <strong>{{ $formatCurrency(cartSubtotal) }}</strong>
             </td>
           </tr>
-          <tr
-            v-if="activeCoupon"
-            class="coupon-row">
+          <tr v-if="activeCoupon" class="coupon-row">
             <td colspan="3">
               <div class="coupon-applied">
                 <strong>Coupon applied:</strong>
@@ -78,7 +55,8 @@
                 <button
                   @click="ecommerceStore.removeCoupon()"
                   class="btn-remove-coupon"
-                  title="Remove coupon">
+                  title="Remove coupon"
+                >
                   &times;
                 </button>
               </div>
@@ -109,22 +87,20 @@
             class="coupon-input"
             :class="{ error: couponError }"
             @input="ecommerceStore.clearCouponError()"
-            @keyup.enter="applyCoupon" />
+            @keyup.enter="applyCoupon"
+          />
           <button
             @click="applyCoupon"
             class="btn btn-secondary"
-            :disabled="!couponCode.trim() || (activeCoupon && !couponError)">
+            :disabled="!couponCode.trim() || (activeCoupon && !couponError)"
+          >
             Apply
           </button>
         </div>
-        <div
-          v-if="couponError"
-          class="error-message">
+        <div v-if="couponError" class="error-message">
           {{ couponError }}
         </div>
-        <div
-          v-if="activeCoupon && !couponError"
-          class="success-message">
+        <div v-if="activeCoupon && !couponError" class="success-message">
           Coupon applied successfully! You saved
           {{ $formatCurrency(couponDiscount) }}
         </div>
@@ -135,9 +111,7 @@
       <h2>
         {{ authStore.user ? 'Customer Information' : 'Your information' }}
       </h2>
-      <form
-        @submit.prevent="submitOrder"
-        class="checkout-form">
+      <form @submit.prevent="submitOrder" class="checkout-form">
         <div class="form-group">
           <label for="name">Full Name *</label>
           <input
@@ -146,7 +120,8 @@
             v-model="customerInfo.name"
             required
             class="form-input"
-            :placeholder="authStore.user ? '' : 'Enter your full name'" />
+            :placeholder="authStore.user ? '' : 'Enter your full name'"
+          />
         </div>
 
         <div class="form-group">
@@ -157,7 +132,8 @@
             v-model="customerInfo.email"
             required
             class="form-input"
-            :placeholder="authStore.user ? '' : 'Enter your email address'" />
+            :placeholder="authStore.user ? '' : 'Enter your email address'"
+          />
         </div>
 
         <div class="form-group">
@@ -169,7 +145,8 @@
             class="form-input"
             :placeholder="authStore.user ? '' : 'Enter your phone number'"
             @input="formatPhoneInput"
-            minlength="14" />
+            minlength="14"
+          />
         </div>
 
         <div class="form-group">
@@ -180,7 +157,8 @@
             required
             class="form-input"
             rows="3"
-            :placeholder="authStore.user ? '' : 'Enter your delivery address'"></textarea>
+            :placeholder="authStore.user ? '' : 'Enter your delivery address'"
+          ></textarea>
         </div>
 
         <div class="form-group">
@@ -190,19 +168,13 @@
             v-model="customerInfo.notes"
             class="form-input"
             rows="2"
-            placeholder="Any special delivery instructions? (Optional)"></textarea>
+            placeholder="Any special delivery instructions? (Optional)"
+          ></textarea>
         </div>
 
         <div class="checkout-actions">
-          <router-link
-            to="/"
-            class="btn btn-secondary">
-            Continue Shopping
-          </router-link>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="isSubmitting">
+          <router-link to="/" class="btn btn-secondary"> Continue Shopping </router-link>
+          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
             {{ isSubmitting ? 'Processing...' : 'Place Order' }}
           </button>
         </div>
@@ -212,150 +184,164 @@
 </template>
 
 <script>
-  import { ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { storeToRefs } from 'pinia';
-  import { useEcommerceStore } from '@/stores/ecommerce';
-  import { useAuthStore } from '@/stores/authStore';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useEcommerceStore } from '@/stores/ecommerce'
+import { useAuthStore } from '@/stores/authStore'
 
-  export default {
-    name: 'Checkout',
-    setup() {
-      const ecommerceStore = useEcommerceStore();
-      const authStore = useAuthStore();
-      const router = useRouter();
+export default {
+  name: 'Checkout',
+  setup() {
+    const ecommerceStore = useEcommerceStore()
+    const authStore = useAuthStore()
+    const router = useRouter()
 
-      const { cart, cartSubtotal, enrichedCartItems, cartTotal, activeCoupon, couponDiscount, couponError } =
-        storeToRefs(ecommerceStore);
+    const {
+      cart,
+      cartSubtotal,
+      enrichedCartItems,
+      cartTotal,
+      activeCoupon,
+      couponDiscount,
+      couponError,
+    } = storeToRefs(ecommerceStore)
 
-      const { userPreferences } = storeToRefs(authStore);
+    const { userPreferences } = storeToRefs(authStore)
 
-      const isSubmitting = ref(false);
-      const orderError = ref('');
-      const couponCode = ref('');
-      const customerInfo = ref({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        notes: '',
-      });
+    const isSubmitting = ref(false)
+    const orderError = ref('')
+    const couponCode = ref('')
+    const customerInfo = ref({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      notes: '',
+    })
 
-      onMounted(async () => {
-        if (authStore.user && userPreferences.value) {
-          customerInfo.value = {
-            name: userPreferences.value.name || '',
-            email: userPreferences.value.email || '',
-            phone: userPreferences.value.phone || '',
-            address: userPreferences.value.address || '',
-            notes: '',
-          };
+    onMounted(async () => {
+      if (authStore.user && userPreferences.value) {
+        customerInfo.value = {
+          name: userPreferences.value.name || '',
+          email: userPreferences.value.email || '',
+          phone: userPreferences.value.phone || '',
+          address: userPreferences.value.address || '',
+          notes: '',
+        }
+      } else {
+        customerInfo.value = {
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          notes: '',
+        }
+      }
+      await ecommerceStore.validateCartStock()
+
+      if (ecommerceStore.stockValidationErrors && ecommerceStore.stockValidationErrors.length > 0) {
+        orderError.value = `Cart validation error(s): <br>${ecommerceStore.stockValidationErrors.join('<br>')}`
+      }
+
+      if (couponError) {
+        ecommerceStore.clearCouponError()
+      }
+    })
+
+    const formatPhoneInput = (event) => {
+      let value = event.target.value.replace(/[^0-9]/g, '')
+
+      value = value.substring(0, 10)
+
+      if (value.length >= 6) {
+        value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`
+      } else if (value.length >= 3) {
+        value = `(${value.slice(0, 3)}) ${value.slice(3)}`
+      }
+
+      customerInfo.value.phone = value
+    }
+
+    const applyCoupon = () => {
+      if (!couponCode.value.trim()) return
+
+      if (ecommerceStore.applyCoupon(couponCode.value)) {
+        couponCode.value = couponCode.value.toUpperCase()
+      } else {
+        couponCode.value = ''
+      }
+    }
+
+    const submitOrder = async () => {
+      isSubmitting.value = true
+      orderError.value = ''
+
+      try {
+        if (!cart.value || cart.value.length === 0) {
+          orderError.value = 'Your cart is empty. Please add items before checking out.'
+        }
+
+        const validationErrors = await ecommerceStore.validateCartStock()
+
+        if (validationErrors && validationErrors.length > 0) {
+          const errorMessage = validationErrors.join('')
+
+          orderError.value = `Cart validation failed: ${errorMessage}`
+          return
+        }
+        const orderData = ecommerceStore.createOrderData({
+          customer: { ...customerInfo.value },
+          cartItems: enrichedCartItems.value,
+        })
+        const result = await ecommerceStore.completeOrder(orderData)
+        if (result.success) {
+          router.push(`/order-confirmation/${result.order.id}`)
+        }
+      } catch (error) {
+        console.error('Order submission failed:', error)
+        if (
+          error.message.includes('Cart items are required') ||
+          error.message.includes('cart was empty')
+        ) {
+          orderError.value = 'Your cart is empty. Please add items before checking out.'
+        } else if (error.message.includes('Insufficient stock')) {
+          orderError.value = `Order failed: ${error.message}`
+        } else if (error.message.includes('Name, email, and address are required')) {
+          orderError.value = 'Please fill in all required fields (Name, Email, Address).'
         } else {
-          customerInfo.value = {
-            name: '',
-            email: '',
-            phone: '',
-            address: '',
-            notes: '',
-          };
+          orderError.value = `Order submission failed: ${error.message || 'Please try again.'}`
         }
-        await ecommerceStore.validateCartStock();
+      } finally {
+        isSubmitting.value = false
+      }
+    }
 
-        if (ecommerceStore.stockValidationErrors && ecommerceStore.stockValidationErrors.length > 0) {
-          orderError.value = `Cart validation error(s): <br>${ecommerceStore.stockValidationErrors.join('<br>')}`;
-        }
-      });
-
-      const formatPhoneInput = event => {
-        let value = event.target.value.replace(/[^0-9]/g, '');
-
-        value = value.substring(0, 10);
-
-        if (value.length >= 6) {
-          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
-        } else if (value.length >= 3) {
-          value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
-        }
-
-        customerInfo.value.phone = value;
-      };
-
-      const applyCoupon = () => {
-        if (!couponCode.value.trim()) return;
-
-        if (ecommerceStore.applyCoupon(couponCode.value)) {
-          couponCode.value = couponCode.value.toUpperCase();
-        } else {
-          couponCode.value = '';
-        }
-      };
-
-      const submitOrder = async () => {
-        isSubmitting.value = true;
-        orderError.value = '';
-
-        try {
-          if (!cart.value || cart.value.length === 0) {
-            orderError.value = 'Your cart is empty. Please add items before checking out.';
-          }
-
-          const validationErrors = await ecommerceStore.validateCartStock();
-
-          if (validationErrors && validationErrors.length > 0) {
-            const errorMessage = validationErrors.join('');
-
-            orderError.value = `Cart validation failed: ${errorMessage}`;
-            return;
-          }
-          const orderData = ecommerceStore.createOrderData({
-            customer: { ...customerInfo.value },
-            cartItems: enrichedCartItems.value,
-          });
-          const result = await ecommerceStore.completeOrder(orderData);
-          if (result.success) {
-            router.push(`/order-confirmation/${result.order.id}`);
-          }
-        } catch (error) {
-          console.error('Order submission failed:', error);
-          if (error.message.includes('Cart items are required') || error.message.includes('cart was empty')) {
-            orderError.value = 'Your cart is empty. Please add items before checking out.';
-          } else if (error.message.includes('Insufficient stock')) {
-            orderError.value = `Order failed: ${error.message}`;
-          } else if (error.message.includes('Name, email, and address are required')) {
-            orderError.value = 'Please fill in all required fields (Name, Email, Address).';
-          } else {
-            orderError.value = `Order submission failed: ${error.message || 'Please try again.'}`;
-          }
-        } finally {
-          isSubmitting.value = false;
-        }
-      };
-
-      return {
-        ecommerceStore,
-        authStore,
-        cart,
-        cartTotal,
-        cartSubtotal,
-        enrichedCartItems,
-        activeCoupon,
-        couponDiscount,
-        couponError,
-        userPreferences,
-        isSubmitting,
-        couponCode,
-        customerInfo,
-        applyCoupon,
-        submitOrder,
-        formatPhoneInput,
-        orderError,
-      };
-    },
-  };
+    return {
+      ecommerceStore,
+      authStore,
+      cart,
+      cartTotal,
+      cartSubtotal,
+      enrichedCartItems,
+      activeCoupon,
+      couponDiscount,
+      couponError,
+      userPreferences,
+      isSubmitting,
+      couponCode,
+      customerInfo,
+      applyCoupon,
+      submitOrder,
+      formatPhoneInput,
+      orderError,
+    }
+  },
+}
 </script>
 
 <style scoped>
-  .guest-notice {
+.guest-notice {
   background-color: #79a206;
   border: 1px solid #2196f3;
   border-radius: 8px;
@@ -389,7 +375,6 @@
   padding: 20px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  
 }
 
 .checkout-table {

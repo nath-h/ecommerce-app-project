@@ -5,6 +5,29 @@ import { logAdminAction } from './admin.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const validateOrderFields = ({ subtotal, discount, total, couponCode }) => {
+  const parsedSubtotal = parseFloat(subtotal);
+  const parsedDiscount = parseFloat(discount);
+  const parsedTotal = parseFloat(total);
+
+  if (parsedTotal < 0 || parsedSubtotal < 0) {
+    return 'Invalid order: Total or subtotal cannot be negative';
+  }
+
+  if (parsedDiscount > parsedSubtotal) {
+    return 'Invalid order: Discount cannot exceed subtotal';
+  }
+
+  if (couponCode && couponCode.type === 'PERCENTAGE' && parseFloat(couponCode.value) > 100) {
+    return 'Invalid coupon: Percentage cannot exceed 100%';
+  }
+
+  const expectedTotal = parsedSubtotal - parsedDiscount;
+  if (Math.abs(expectedTotal - parsedTotal) > 0.01) {
+    return 'Invalid order: Total calculation mismatch. Please check total, subtotal and discount.';
+  }
+};
+
 router.use('/admin', authenticateToken, requireAdmin);
 
 router.get('/admin', async (req, res) => {
@@ -41,6 +64,11 @@ router.post('/admin', async (req, res) => {
       return res
         .status(400)
         .json({ error: 'Subtotal, total, status, name, email, phone and address are required fields' });
+    }
+
+    const validationError = validateOrderFields({ subtotal, discount, total, couponCode });
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
     if (userId) {
@@ -120,6 +148,11 @@ router.put('/admin/:id', async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    const validationError = validateOrderFields({ subtotal, discount, total, couponCode });
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -175,12 +208,15 @@ router.put('/admin/:id', async (req, res) => {
 
     const filteredChanges = Object.fromEntries(Object.entries(changes).filter(([_, value]) => value !== undefined));
 
+    let actionType;
     if (Object.keys(filteredChanges).length > 0) {
-      if (updatedOrder.status === 'CANCELLED') {
+      if (changes.status && changes.status.to === 'CANCELLED') {
+        actionType = 'CANCELLED_ORDER';
         await logAdminAction(req.user.userId, 'CANCELLED_ORDER', 'ORDER', orderId, {
           changes: filteredChanges,
         });
       } else {
+        actionType = 'UPDATED_ORDER';
         await logAdminAction(req.user.userId, 'UPDATED_ORDER', 'ORDER', orderId, {
           changes: filteredChanges,
         });
@@ -188,7 +224,9 @@ router.put('/admin/:id', async (req, res) => {
     }
     res.json({
       message:
-        Object.keys(filteredChanges).length <= 0
+        actionType === 'CANCELLED_ORDER'
+          ? 'Order has been cancelled successfully'
+          : Object.keys(filteredChanges).length <= 0
           ? 'No fields were changed, therefore no changes were made'
           : 'Order updated successfully',
       order: updatedOrder,
@@ -228,33 +266,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const parsedSubtotal = parseFloat(subtotal);
-    const parsedDiscount = parseFloat(discount);
-    const parsedTotal = parseFloat(total);
-
-    if (parsedTotal < 0) {
-      return res.status(400).json({
-        error: 'Invalid order: Total cannot be negative',
-      });
-    }
-
-    if (parsedDiscount > parsedSubtotal) {
-      return res.status(400).json({
-        error: 'Invalid order: Discount cannot exceed subtotal',
-      });
-    }
-
-    if (coupon && coupon.type === 'PERCENTAGE' && parseFloat(coupon.value) > 100) {
-      return res.status(400).json({
-        error: 'Invalid coupon: Percentage cannot exceed 100%',
-      });
-    }
-
-    const expectedTotal = parsedSubtotal - parsedDiscount;
-    if (Math.abs(expectedTotal - parsedTotal) > 0.01) {
-      return res.status(400).json({
-        error: 'Invalid order: Total calculation mismatch',
-      });
+    const validationError = validateOrderFields({ subtotal, discount, total, couponCode });
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
     const result = await prisma.$transaction(async tx => {
@@ -339,7 +353,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({
       success: true,
       order: result,
-      message: 'Order created successfully!',
+      message: 'Order has been created successfully!',
     });
   } catch (error) {
     console.error('Order creation error:', error);

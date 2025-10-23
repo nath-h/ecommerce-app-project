@@ -17,6 +17,7 @@ import productRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
 import adminRouter from './routes/admin.js';
 import couponRoutes from './routes/coupon.js';
+import usersRoutes from './routes/users.js';
 import './jobs.js';
 
 app.use('/api/admin', adminRouter);
@@ -24,6 +25,7 @@ app.use('/api/coupon', couponRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/auth', authRouter);
 app.use('/api/products', productRoutes);
+app.use('/api/users', usersRoutes);
 app.get('/', (req, res) => {
   console.log(`Root endpoint hit`);
   res.json({ message: 'Backend API is running!' });

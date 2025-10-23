@@ -13,6 +13,7 @@
           
           ADMIN FUNCTIONALITY:
           Cancel/edit orders (Order OrderStatus Enum AdminAction AdminActionType UPDATED/CANCELLED_ORDER Order.status = CANCELLED)
+          DELETE, DISABLE button next to edit in admin tables
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)
           

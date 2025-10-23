@@ -472,6 +472,7 @@
                     <th>Name</th>
                     <th>Type</th>
                     <th>Price</th>
+                    <th>Stock</th>
                     <th>Status</th>
                     <th>Featured</th>
                     <th>Actions</th>
@@ -480,10 +481,13 @@
                 <tbody>
                   <tr v-for="product in products" :key="product.id">
                     <td>{{ product.id }}</td>
-                    <td>{{ product.icon }}</td>
+                    <td style="white-space: nowrap;">{{ product.icon }}</td>
                     <td>{{ product.name }}</td>
                     <td>{{ formatProductType(product.type) }}</td>
                     <td>${{ toTwoDecimals(product.price) }}</td>
+                    <!-- \u00A0 is unicode for a non-line breaking space 
+                     to fix wrapping of parentheses in negative stock -->
+                    <td>{{ product.stock < 0 ? `(\u00A0${product.stock}\u00A0)` : product.stock}}</td>
                     <td>
                       <span
                         :class="[
@@ -855,7 +859,7 @@ const getBadgeClass = (action) => {
   if (actionType.includes('create')) return 'badge badge-created'
   if (actionType.includes('update')) return 'badge badge-updated'
   if (actionType.includes('cancel')) return 'badge badge-cancelled'
-  if (actionType.includes('disable')) return 'badge badge-disabled'
+  if (actionType.includes('deactivated')) return 'badge badge-deactivated'
   if (actionType.includes('reactivated')) return 'badge badge-reactivated'
 }
 
@@ -882,6 +886,16 @@ const showMessage = (text, type = 'success') => {
   }, 4000)
 }
 
+const scrollFormIntoView = () => {
+  const formSection = document.querySelector('.form-section')
+
+  formSection.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  })
+
+}
+
 const makeAuthenticatedRequest = async (url, options = {}) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -904,7 +918,7 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
 const fetchUsers = async () => {
   loadingUsers.value = true
   try {
-    const response = await makeAuthenticatedRequest('/api/admin/users')
+    const response = await makeAuthenticatedRequest('/api/users/admin')
     const data = await response.json()
 
     if (response.ok) {
@@ -1017,6 +1031,7 @@ const handleOrderSubmit = async () => {
     if (response.ok) {
       showMessage(data.message)
       resetOrderForm()
+      scrollFormIntoView();
       await Promise.all([fetchOrders(), fetchAdminActions()])
     } else {
       throw new Error(data.error || 'Operation failed')
@@ -1077,12 +1092,14 @@ const handleCouponSubmit = async () => {
     }
 
     if (data.isExisting && !editingCouponId.value) {
-      showMessage(data.message, 'info')
+      showMessage(data.message)
       editCoupon(data.coupon)
       return
+
     }
     showMessage(data.message)
     resetCouponForm()
+    scrollFormIntoView();
     await Promise.all([fetchCoupons(), fetchAdminActions()])
   } catch (error) {
     console.error('Error submitting coupon:', error)
@@ -1102,49 +1119,33 @@ const editCoupon = (coupon) => {
     formattedDate = localDate.toISOString().slice(0, 16)
   }
 
-  Object.assign(couponForm, {
-    code: coupon.code,
-    type: coupon.type,
-    value: toTwoDecimals(coupon.value),
-    description: coupon.description || '',
-    minOrder: coupon.minOrder === 0 || coupon.minOrder === '0' ? null : toTwoDecimals(coupon.minOrder),
-    maxDiscount:
+    couponForm.code = coupon.code,
+    couponForm.type = coupon.type,
+    couponForm.value = toTwoDecimals(coupon.value),
+    couponForm.description = coupon.description || '',
+    couponForm.minOrder = coupon.minOrder === 0 || coupon.minOrder === '0' ? null : toTwoDecimals(coupon.minOrder),
+    couponForm.maxDiscount =
       parseFloat(coupon.maxDiscount) > 0
         ? toTwoDecimals(coupon.maxDiscount)
         : null,
-    expiresAt: formattedDate,
-    isActive: coupon.isActive,
-  })
-
-  const formSection = document.querySelector('.form-section')
-  if (formSection) {
-    formSection.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }
+    couponForm.expiresAt = formattedDate,
+    couponForm.isActive = coupon.isActive,
+  scrollFormIntoView();
 }
 
 const editProduct = (product) => {
   editingProductId.value = product.id
+  
+  productForm.name = product.name,
+  productForm.type = product.type,
+  productForm.price = toTwoDecimals(product.price),
+  productForm.icon = product.icon,
+  productForm.description = product.description || '',
+  productForm.isActive = product.isActive,
+  productForm.isFeatured = product.isFeatured,
+  productForm.stock = product.stock,
 
-  Object.assign(productForm, {
-    name: product.name,
-    type: product.type,
-    price: toTwoDecimals(product.price),
-    icon: product.icon,
-    description: product.description || '',
-    isActive: product.isActive,
-    isFeatured: product.isFeatured,
-    stock: product.stock,
-  })
-
-  const formSection = document.querySelector('.form-section')
-
-  formSection.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+  scrollFormIntoView();
 }
 
 
@@ -1184,6 +1185,7 @@ const handleProductSubmit = async () => {
     }
     showMessage(data.message)
     resetProductForm()
+    scrollFormIntoView();
     await Promise.all([fetchProducts(), fetchAdminActions(), store.initializeStore()])
   } catch (error) {
     console.error('Error submitting product:', error)
@@ -1194,17 +1196,15 @@ const handleProductSubmit = async () => {
 }
 
 const resetProductForm = () => {
-  editingProductId.value = null
-  Object.assign(productForm, {
-    name: '',
-    type: '',
-    price: '',
-    icon: '',
-    description: '',
-    isActive: false,
-    isFeatured: false,
-    stock: '',
-  })
+    productForm.name = '',
+    productForm.type = '',
+    productForm.price = '',
+    productForm.icon = '',
+    productForm.description = '',
+    productForm.isActive = false,
+    productForm.isFeatured = false,
+    productForm.stock = '',
+    editingProductId.value = null
 }
 
 const formatProductType = (type) => {
@@ -1217,17 +1217,15 @@ const isCouponExpired = (expiresAt) => {
 }
 
 const resetCouponForm = () => {
-  editingCouponId.value = null
-  Object.assign(couponForm, {
-    code: '',
-    type: 'PERCENTAGE',
-    value: '',
-    description: '',
-    minOrder: '',
-    maxDiscount: '',
-    expiresAt: '',
-    isActive: true,
-  })
+    couponForm.code = '',
+    couponForm.type = 'PERCENTAGE',
+    couponForm.value = '',
+    couponForm.description = '',
+    couponForm.minOrder = '',
+    couponForm.maxDiscount = '',
+    couponForm.expiresAt = '',
+    couponForm.isActive = true,
+    editingCouponId.value = null
 }
 
 const formatCouponValue = (coupon) => {
@@ -1288,7 +1286,7 @@ const handleUserSubmit = async () => {
   isLoading.value = true
 
   try {
-    const url = editingUserId.value ? `/api/admin/users/${editingUserId.value}` : '/api/admin/users'
+    const url = editingUserId.value ? `/api/users/admin/${editingUserId.value}` : '/api/users/admin'
     const method = editingUserId.value ? 'PUT' : 'POST'
     const body = { ...userForm }
 
@@ -1327,6 +1325,7 @@ const handleUserSubmit = async () => {
     if (response.ok) {
       showMessage(data.message)
       resetUserForm()
+      scrollFormIntoView();
       await Promise.all([fetchUsers(), fetchAdminActions()])
     } else {
       throw new Error(data.error || 'Operation failed')
@@ -1350,12 +1349,7 @@ const editUser = (user) => {
   userForm.isActive = user.isActive
   userForm.password = ''
 
-  const formSection = document.querorderector('.form-section')
-
-  formSection.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+  scrollFormIntoView();
 }
 
 const editOrder = (order) => {
@@ -1372,12 +1366,7 @@ const editOrder = (order) => {
   orderForm.customerAddress = order.customerAddress
   editingOrderId.value = order.id
 
-  const formSection = document.querySelector('.form-section')
-
-  formSection.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+  scrollFormIntoView();
 }
 
 const formatDate = (dateString) => {
@@ -1420,13 +1409,13 @@ const formatActionDetails = (details) => {
           if (field === 'price') {
             return `<strong>Price: </strong>$${toTwoDecimals(from)} → $${toTwoDecimals(to)}`
           }
-          return `<strong>${field}: </strong>${from}→${to}`
+          return `<strong>${field}: </strong>${from}\u00A0→\u00A0${to}`
         })
         .join('<br>')
     }
 
-    if (parsed.id || parsed.firstName || parsed.lastName) {
-      return `<strong>Created user: </strong>${parsed.id}<br> <strong>First Name: </strong>${parsed.firstName}<br><strong>Last name: </strong>${parsed.lastName}<br> <strong>Email: </strong>${parsed.email}`
+    if (parsed.id) {
+      return `<strong>First Name: </strong>${parsed.firstName}<br><strong>Last name: </strong>${parsed.lastName}<br><strong>Email: </strong>${parsed.email}<br> <strong>Admin: </strong>${parsed.isAdmin}<br><strong>Active: </strong>${parsed.isActive}`
     }
 
     if (parsed.code && parsed.type) {
@@ -1746,7 +1735,6 @@ onMounted(() => {
   border: 1px solid #dee2e6;
   width: 100%;
   min-width: 100%;
-
   margin: 0 auto;
   display: flex;
   justify-content: center;
@@ -1956,7 +1944,7 @@ onMounted(() => {
   color: #842029;
 }
 
-.badge-disabled {
+.badge-deactivated {
   background-color: #f8d7da;
   color: #842029;
 }
