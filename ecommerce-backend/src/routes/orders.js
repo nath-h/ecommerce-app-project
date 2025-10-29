@@ -266,7 +266,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const validationError = validateOrderFields({ subtotal, discount, total, couponCode });
+    const validationError = validateOrderFields({ subtotal, discount, total, coupon });
     if (validationError) {
       return res.status(400).json({ error: validationError });
     }
@@ -292,9 +292,9 @@ router.post('/', async (req, res) => {
       }
 
       const orderData = {
-        subtotal: parsedSubtotal,
-        discount: parsedDiscount,
-        total: parsedTotal,
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
         notes: notes || null,
         couponCode: coupon?.code || null,
         couponDiscount: coupon?.discount ? parseFloat(coupon.discount) : null,
@@ -372,16 +372,13 @@ router.get('/', async (req, res) => {
   try {
     const userIdParam = req.query.userId;
     const customerEmail = req.query.customerEmail;
-    const isAdmin = req.query.isAdmin === 'true';
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
     let whereClause = {};
 
-    if (isAdmin) {
-      whereClause = {};
-    } else if (userIdParam && !isNaN(parseInt(userIdParam))) {
+    if (userIdParam) {
       whereClause = {
         user: {
           id: parseInt(userIdParam),
@@ -459,19 +456,19 @@ router.get('/:id', async (req, res) => {
 
     if (userId && order.user?.id === parseInt(userId)) {
       hasAccess = true;
-    } else if ((customerEmail && order.customerEmail === customerEmail) || order.user.email === customerEmail) {
+    } else if (order.customerEmail === customerEmail) {
       hasAccess = true;
     } else if (!userId && !customerEmail) {
-      return res.status(401).json({ error: 'Authentication required - provide userid or customerEmail' });
+      return res.status(401).send('Authentication required - provide userid or customerEmail');
     }
 
     if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied - this order does not belong to you' });
+      return res.status(403).send('Access denied - this order does not belong to you');
     }
     res.json(order);
   } catch (error) {
     console.error('Error fetching order:', error);
-    res.status(500).json({ error: 'Failed to fetch order' });
+    res.status(500).send({ error: 'Failed to fetch order' });
   }
 });
 

@@ -133,7 +133,7 @@ import { ref, onMounted, computed, reactive } from 'vue'
 export default {
   name: 'PastOrders',
   setup() {
-    const ecommerceStore = useEcommerceStore()
+    const store = useEcommerceStore()
     const authStore = useAuthStore()
 
     const orders = ref([])
@@ -166,7 +166,7 @@ export default {
       error.value = null
 
       try {
-        const data = await ecommerceStore.fetchUserOrders(page, pagination.value.limit)
+        const data = await store.storeFetchUserOrders(page, pagination.value.limit)
 
         if (append) {
           orders.value = [...orders.value, ...data.orders]
@@ -204,7 +204,7 @@ export default {
     }
 
     const addToCart = (productId, quantity) => {
-      const success = ecommerceStore.addToCart(productId, quantity)
+      const success = store.addToCart(productId, quantity)
       if (!success) {
         showMessage('Unable to add item to cart. Check stock availability.', 'error')
       }
@@ -213,7 +213,7 @@ export default {
     const addAllToCart = (order) => {
       let failedItems = []
       order.orderItems.forEach((item) => {
-        const success = ecommerceStore.addToCart(item.product.id, item.quantity)
+        const success = store.addToCart(item.product.id, item.quantity)
         if (!success) {
           failedItems.push(item.product.name)
         }
@@ -255,7 +255,7 @@ export default {
       cancellingOrders.value.push(orderId)
 
       try {
-        await ecommerceStore.cancelOrder(orderId)
+        await store.cancelOrder(orderId)
 
         const order = orders.value.find((o) => o.id === orderId)
         if (order) {

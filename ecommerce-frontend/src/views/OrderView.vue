@@ -3,7 +3,7 @@
     <GuestVerificationModal
       :show="showEmailModal"
       :loading="emailVerifying"
-      :error="emailError"
+      :error="error"
       @verify="verifyEmail"
       @cancel="handleModalCancel"
       @close="handleModalClose"
@@ -13,9 +13,16 @@
     </div>
 
     <div v-else-if="error" class="error-container">
-      <h1>Order Not Found</h1>
-      <p>{{ error }}</p>
-      <router-link to="/" class="btn btn-primary"> Back to Home </router-link>
+      <h1>Error displaying order:</h1>
+      <div class="error-message">
+        <p>{{ error }}</p>
+      </div>
+      <div class="button-row">
+        <router-link to="/" class="btn btn-primary"> Back to Home </router-link>
+        <button class="btn btn-primary" style="margin-left: 20px" @click="handleModalRetry">
+          Retry Verification
+        </button>
+      </div>
     </div>
 
     <div v-else-if="order" class="confirmation-container">
@@ -177,6 +184,19 @@
         </div>
       </div>
     </div>
+    <div v-else-if="!showEmailModal" class="verify-container">
+      <h2>You must verify your credentials or login to view this order.</h2>
+      <div class="button-row">
+        <button class="btn btn-primary" @click="handleModalRetry">Verify</button>
+
+        <router-link :to="`/login?redirect=${$route.fullPath}`">
+          <button class="btn btn-primary">Login</button>
+        </router-link>
+      </div>
+      <div v-if="error" class="error-message">
+        <p>{{ error }}</p>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -194,7 +214,6 @@ export default {
   name: 'OrderView',
   setup() {
     const route = useRoute()
-    const router = useRouter()
     const ecommerceStore = useEcommerceStore()
     const authStore = useAuthStore()
     const order = ref(null)
@@ -204,7 +223,6 @@ export default {
     const isCancelling = ref(false)
     const showEmailModal = ref(false)
     const emailVerifying = ref(false)
-    const emailError = ref(null)
 
     const canCancelOrder = computed(() => {
       if (!order.value) return false
@@ -214,13 +232,12 @@ export default {
     const fetchOrder = async (customerEmail = null) => {
       loading.value = true
       error.value = null
-      emailError.value = ''
 
       try {
         const orderId = route.params.id
         let url = `/api/orders/${orderId}`
 
-        if (authStore && authStore.userId) {
+        if (authStore.userId) {
           url += `?userId=${authStore.userId}`
         } else if (customerEmail) {
           url += `?customerEmail=${encodeURIComponent(customerEmail)}`
@@ -233,27 +250,12 @@ export default {
         const response = await fetch(url)
 
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Order not found')
-          } else if (response.status === 403) {
-            if (!authStore.user) {
-              emailError.value = 'Invalid email address for this order'
-              showEmailModal.value = true
-              loading.value = false
-              return
-            }
-            throw new Error('Access denied - this order does not belong to you')
-          } else if (response.status === 401) {
-            showEmailModal.value = true
-            loading.value = false
-            return
-          } else {
-            throw new Error('Failed to load order')
-          }
+          error.value = await response.text()
+          showEmailModal.value = false
+        } else {
+          order.value = await response.json()
+          showEmailModal.value = false
         }
-
-        order.value = await response.json()
-        showEmailModal.value = false
       } catch (err) {
         error.value = err.message
         showEmailModal.value = false
@@ -264,17 +266,27 @@ export default {
 
     const verifyEmail = async (email) => {
       emailVerifying.value = true
-      emailError.value = ''
-      await fetchOrder(email)
-      emailVerifying.value = false
+      const success = await fetchOrder(email)
+
+      if (success) {
+        emailVerifying.value = false
+      }
     }
 
     const handleModalCancel = () => {
-      router.push('/')
+      showEmailModal.value = false
+      emailVerifying.value = false
     }
 
     const handleModalClose = () => {
-      router.push('/')
+      showEmailModal.value = false
+      emailVerifying.value = false
+    }
+
+    const handleModalRetry = () => {
+      error.value = null
+      emailVerifying.value = false
+      showEmailModal.value = true
     }
 
     const cancelOrder = async () => {
@@ -283,12 +295,13 @@ export default {
       isCancelling.value = true
       cancelError.value = null
       try {
-        await ecommerceStore.cancelOrder(order.value.id)
-        order.value.status = 'CANCELLED'
+        const success = await ecommerceStore.cancelOrder(order.value.id)
+        if (success) {
+          order.value.status = 'CANCELLED'
+        }
       } catch (err) {
         console.error('Failed to cancel order:', err)
-        cancelError.value = 'Failed to cancel order. Order has already been cancelled.'
-        order.value.status = 'CANCELLED'
+        cancelError.value = err
       } finally {
         isCancelling.value = false
       }
@@ -342,10 +355,10 @@ export default {
       cancelOrder,
       showEmailModal,
       emailVerifying,
-      emailError,
       verifyEmail,
       handleModalCancel,
       handleModalClose,
+      handleModalRetry,
       formatDate,
       formatPrice,
       formatStatus,
@@ -363,8 +376,12 @@ export default {
 }
 
 .loading-container,
-.error-container {
-  text-align: center;
+.error-container,
+.verify-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   padding: 50px 20px;
 }
 
@@ -374,7 +391,7 @@ export default {
   border: 1px solid #f5c6cb;
   border-radius: 4px;
   padding: 15px;
-  margin-bottom: 20px;
+  margin: 20px 20px;
   position: relative;
   display: flex;
   align-items: center;
@@ -601,7 +618,7 @@ export default {
 }
 
 .btn-secondary {
-  background-color: #6c757d;
+  background-color: #42b983;
   color: white;
 }
 
@@ -614,6 +631,13 @@ export default {
 .btn-danger {
   background-color: #dc3545;
   color: white;
+}
+
+.button-row {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 10px;
 }
 
 .btn:hover {

@@ -1,8 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding database:');
+
+  const saltRounds = 10;
 
   const users = await Promise.all([
     prisma.user.create({
@@ -14,7 +17,7 @@ async function main() {
         address: '123 Main St, Anytown, ST 12345',
         isAdmin: false,
         isActive: false,
-        password: 'password',
+        password: await bcrypt.hash('password', saltRounds),
       },
     }),
     prisma.user.create({
@@ -26,7 +29,7 @@ async function main() {
         address: '456 Oak Ave, Somewhere, ST 67890',
         isAdmin: false,
         isActive: false,
-        password: 'password',
+        password: await bcrypt.hash('password', saltRounds),
       },
     }),
     prisma.user.create({
@@ -38,7 +41,7 @@ async function main() {
         address: '789 Admin Blvd, AdminCity, ST 11111',
         isAdmin: true,
         isActive: true,
-        password: 'password',
+        password: await bcrypt.hash('password', saltRounds),
       },
     }),
   ]);

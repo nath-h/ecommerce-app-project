@@ -40,7 +40,7 @@ router.get('/admin', async (req, res) => {
 
 router.post('/admin', async (req, res) => {
   try {
-    const { userId, email, password, firstName, lastName, phone, address, isAdmin, isActive } = req.body;
+    const { email, password, firstName, lastName, phone, address, isAdmin, isActive } = req.body;
 
     if (!email || !password || !firstName || !lastName || !phone || !address) {
       return res.status(400).json({
@@ -224,6 +224,51 @@ router.put('/admin/:id', async (req, res) => {
     res.status(500).json({
       error: 'Internal server error while updating user',
     });
+  }
+});
+
+router.post('/favorite/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { favorites: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isFavorited = user.favorites.some(fav => fav.id === id);
+
+    const userFavorite = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        favorites: isFavorited ? { disconnect: { id: id } } : { connect: { id: id } },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        isAdmin: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        favorites: true,
+      },
+    });
+
+    res.json({
+      message: 'Favorite updated successfully',
+      user: userFavorite,
+    });
+  } catch (error) {
+    console.error(error);
   }
 });
 

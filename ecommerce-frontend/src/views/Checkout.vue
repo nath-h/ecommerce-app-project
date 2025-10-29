@@ -2,183 +2,187 @@
   <main class="wrapper">
     <h1>Checkout</h1>
 
+    <div v-if="!authStore.user" class="guest-notice">
+      <p>You are checking out as a guest.</p>
+      <p>
+        <router-link to="/login" class="login-link"> Login </router-link>
+        or
+        <router-link to="/register" class="register-link"> Register </router-link>
+        to save your preferences and view order history.
+      </p>
+    </div>
+
     <div v-if="orderError" class="error-message" v-html="orderError"></div>
 
-    <div v-if="cart.length === 0" class="empty-cart">
-      <p>Your cart is empty!</p>
+    <div v-if="cart.length === 0">
+      <div class="empty-cart">
+        <p>Your cart is empty!</p>
+      </div>
+      <div style="text-align: center; margin-top: 16px"></div>
       <router-link to="/products" class="btn btn-primary"> Go Shopping </router-link>
     </div>
 
     <div v-else>
-      <div v-if="!authStore.user" class="guest-notice">
-        <p>You are checking out as a guest.</p>
-        <p>
-          <router-link to="/login" class="login-link"> Login </router-link>
-          or
-          <router-link to="/register" class="register-link"> Register </router-link>
-          to save your preferences and view order history.
-        </p>
-      </div>
-    </div>
+      <div class="checkout-section">
+        <h2>Order Summary</h2>
+        <table class="checkout-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in enrichedCartItems" :key="item.productId">
+              <td>{{ item.name }}</td>
+              <td>${{ item.price }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ $formatCurrency(item.total) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3"><strong>Subtotal:</strong></td>
+              <td>
+                <strong>{{ $formatCurrency(cartSubtotal) }}</strong>
+              </td>
+            </tr>
+            <tr v-if="activeCoupon" class="coupon-row">
+              <td colspan="3">
+                <div class="coupon-applied">
+                  <strong>Coupon applied:</strong>
+                  {{ activeCoupon.code }}
+                  <button
+                    @click="ecommerceStore.removeCoupon()"
+                    class="btn-remove-coupon"
+                    title="Remove coupon"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div class="coupon-description">
+                  {{ activeCoupon.description }}
+                </div>
+              </td>
+              <td class="discount-amount">
+                <strong>-{{ $formatCurrency(couponDiscount) }}</strong>
+              </td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3"><strong>Total:</strong></td>
+              <td>
+                <strong>{{ $formatCurrency(cartTotal) }}</strong>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
 
-    <div class="checkout-section">
-      <h2>Order Summary</h2>
-      <table class="checkout-table">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in enrichedCartItems" :key="item.productId">
-            <td>{{ item.name }}</td>
-            <td>${{ item.price }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>${{ item.total }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3"><strong>Subtotal:</strong></td>
-            <td>
-              <strong>{{ $formatCurrency(cartSubtotal) }}</strong>
-            </td>
-          </tr>
-          <tr v-if="activeCoupon" class="coupon-row">
-            <td colspan="3">
-              <div class="coupon-applied">
-                <strong>Coupon applied:</strong>
-                {{ activeCoupon.code }}
-                <button
-                  @click="ecommerceStore.removeCoupon()"
-                  class="btn-remove-coupon"
-                  title="Remove coupon"
-                >
-                  &times;
-                </button>
-              </div>
-              <div class="coupon-description">
-                {{ activeCoupon.description }}
-              </div>
-            </td>
-            <td class="discount-amount">
-              <strong>-{{ $formatCurrency(couponDiscount) }}</strong>
-            </td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3"><strong>Total:</strong></td>
-            <td>
-              <strong>{{ $formatCurrency(cartTotal) }}</strong>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="coupon-section">
-        <h3>Have a coupon code?</h3>
-        <div class="coupon-input-container">
-          <input
-            type="text"
-            v-model="couponCode"
-            placeholder="Enter coupon code"
-            class="coupon-input"
-            :class="{ error: couponError }"
-            @input="ecommerceStore.clearCouponError()"
-            @keyup.enter="applyCoupon"
-          />
-          <button
-            @click="applyCoupon"
-            class="btn btn-secondary"
-            :disabled="!couponCode.trim() || (activeCoupon && !couponError)"
-          >
-            Apply
-          </button>
-        </div>
-        <div v-if="couponError" class="error-message">
-          {{ couponError }}
-        </div>
-        <div v-if="activeCoupon && !couponError" class="success-message">
-          Coupon applied successfully! You saved
-          {{ $formatCurrency(couponDiscount) }}
+        <div class="coupon-section">
+          <h3>Have a coupon code?</h3>
+          <div class="coupon-input-container">
+            <input
+              id="coupon"
+              type="text"
+              v-model="couponCode"
+              placeholder="Enter coupon code"
+              class="coupon-input"
+              :class="{ error: couponError }"
+              @input="ecommerceStore.clearCouponError()"
+              @keyup.enter="applyCoupon"
+            />
+            <button
+              @click="applyCoupon"
+              class="btn btn-secondary"
+              :disabled="!couponCode.trim() || (activeCoupon && !couponError)"
+            >
+              Apply
+            </button>
+          </div>
+          <div v-if="couponError" class="error-message">
+            {{ couponError }}
+          </div>
+          <div v-if="activeCoupon && !couponError" class="success-message">
+            Coupon applied successfully! You saved
+            {{ $formatCurrency(couponDiscount) }}
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="checkout-section">
-      <h2>
-        {{ authStore.user ? 'Customer Information' : 'Your information' }}
-      </h2>
-      <form @submit.prevent="submitOrder" class="checkout-form">
-        <div class="form-group">
-          <label for="name">Full Name *</label>
-          <input
-            type="text"
-            id="name"
-            v-model="customerInfo.name"
-            required
-            class="form-input"
-            :placeholder="authStore.user ? '' : 'Enter your full name'"
-          />
-        </div>
+      <div class="checkout-section">
+        <h2>
+          {{ authStore.user ? 'Customer Information' : 'Your information' }}
+        </h2>
+        <form @submit.prevent="submitOrder" class="checkout-form">
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input
+              type="text"
+              id="name"
+              v-model="customerInfo.name"
+              required
+              class="form-input"
+              :placeholder="authStore.user ? '' : 'Enter your full name'"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="email">Email *</label>
-          <input
-            type="email"
-            id="email"
-            v-model="customerInfo.email"
-            required
-            class="form-input"
-            :placeholder="authStore.user ? '' : 'Enter your email address'"
-          />
-        </div>
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input
+              type="email"
+              id="email"
+              v-model="customerInfo.email"
+              required
+              class="form-input"
+              :placeholder="authStore.user ? '' : 'Enter your email address'"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="phone">Phone Number *</label>
-          <input
-            type="tel"
-            id="phone"
-            v-model="customerInfo.phone"
-            class="form-input"
-            :placeholder="authStore.user ? '' : 'Enter your phone number'"
-            @input="formatPhoneInput"
-            minlength="14"
-          />
-        </div>
+          <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input
+              type="tel"
+              id="phone"
+              v-model="customerInfo.phone"
+              class="form-input"
+              :placeholder="authStore.user ? '' : 'Enter your phone number'"
+              @input="formatPhoneInput"
+              minlength="14"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="address">Delivery Address *</label>
-          <textarea
-            id="address"
-            v-model="customerInfo.address"
-            required
-            class="form-input"
-            rows="3"
-            :placeholder="authStore.user ? '' : 'Enter your delivery address'"
-          ></textarea>
-        </div>
+          <div class="form-group">
+            <label for="address">Delivery Address *</label>
+            <textarea
+              id="address"
+              v-model="customerInfo.address"
+              required
+              class="form-input"
+              rows="3"
+              :placeholder="authStore.user ? '' : 'Enter your delivery address'"
+            ></textarea>
+          </div>
 
-        <div class="form-group">
-          <label for="notes">Special Instructions</label>
-          <textarea
-            id="notes"
-            v-model="customerInfo.notes"
-            class="form-input"
-            rows="2"
-            placeholder="Any special delivery instructions? (Optional)"
-          ></textarea>
-        </div>
+          <div class="form-group">
+            <label for="notes">Special Instructions</label>
+            <textarea
+              id="notes"
+              v-model="customerInfo.notes"
+              class="form-input"
+              rows="2"
+              placeholder="Any special delivery instructions? (Optional)"
+            ></textarea>
+          </div>
 
-        <div class="checkout-actions">
-          <router-link to="/" class="btn btn-secondary"> Continue Shopping </router-link>
-          <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Processing...' : 'Place Order' }}
-          </button>
-        </div>
-      </form>
+          <div class="checkout-actions">
+            <router-link to="/" class="btn btn-secondary"> Continue Shopping </router-link>
+            <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Place Order' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </main>
 </template>
@@ -294,7 +298,7 @@ export default {
           customer: { ...customerInfo.value },
           cartItems: enrichedCartItems.value,
         })
-        const result = await ecommerceStore.completeOrder(orderData)
+        const result = await ecommerceStore.createOrder(orderData)
         if (result.success) {
           router.push(`/order-confirmation/${result.order.id}`)
         }
@@ -346,6 +350,7 @@ export default {
   border: 1px solid #2196f3;
   border-radius: 8px;
   padding: 15px;
+  margin-top: 20px;
   margin-bottom: 20px;
   text-align: center;
 }
@@ -553,7 +558,13 @@ export default {
 }
 
 .empty-cart {
+  background-color: #79a206;
+  border: 1px solid #2196f3;
+  margin-bottom: -10px;
+  border-radius: 8px;
   text-align: center;
-  padding: 50px;
+  color: white;
+  opacity: 90%;
+  font-weight: bold;
 }
 </style>

@@ -258,6 +258,12 @@ template {
 .icofont-sausage:before {
   content: '\eb8f';
 }
+.icofont-star:before {
+  content: '\f005';
+}
+.icofont-star-empty:before {
+  content: '\f006';
+}
 .icofont-xs {
   font-size: 0.5em;
 }
@@ -530,7 +536,7 @@ footer {
   padding: 0px 7px;
   font-size: 20px;
 }
-.recommended,
+.featured,
 .card-container {
   display: flex;
   justify-content: space-between;
@@ -671,7 +677,7 @@ footer {
   opacity: 0.9;
 }
 @media (max-width: 920px) {
-  .recommended {
+  .featured {
     flex-direction: column;
     align-items: center;
   }

@@ -202,14 +202,6 @@ export const useAuthStore = defineStore('auth', {
     showExpirationWarning() {
       if (typeof window !== 'undefined') {
         const timeRemaining = this.timeUntilExpiration
-        console.log(
-          'Warning triggered - timeRemaining:',
-          timeRemaining,
-          'seconds:',
-          Math.floor(timeRemaining / 1000),
-        )
-        console.log('Login time:', new Date(this.loginTime))
-        console.log('Current time:', new Date())
 
         window.dispatchEvent(
           new CustomEvent('tokenExpirationWarning', {
@@ -243,6 +235,7 @@ export const useAuthStore = defineStore('auth', {
 
         if (response.ok) {
           this.setUser(data.user, data.token)
+          this.fetchUserFavorites()
           return true
         } else {
           this.logout()
@@ -252,6 +245,24 @@ export const useAuthStore = defineStore('auth', {
         console.error('Token refresh error', error)
         this.logout()
         return false
+      }
+    },
+
+    async fetchUserFavorites() {
+      if (!this.user) return
+
+      try {
+        const response = await fetch(`/api/users/${this.user.id}`)
+        if (response.ok) {
+          const userData = await response.json()
+          this.user = {
+            ...userData.user,
+            favorites: userData.favorites || [],
+          }
+          this.saveAuthToStorage()
+        }
+      } catch (error) {
+        console.error('Error fetching user favorites:', error)
       }
     },
 

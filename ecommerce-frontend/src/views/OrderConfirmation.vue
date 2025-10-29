@@ -3,7 +3,7 @@
     <GuestVerificationModal
       :show="showEmailModal"
       :loading="emailVerifying"
-      :error="emailError"
+      :error="error"
       @verify="verifyEmail"
       @cancel="handleModalCancel"
       @close="handleModalClose"
@@ -13,12 +13,19 @@
     </div>
 
     <div v-else-if="error" class="error-container">
-      <h1>Order Not Found</h1>
-      <p>{{ error }}</p>
-      <router-link to="/" class="btn btn-primary"> Back to Home </router-link>
+      <h1>Error displaying order:</h1>
+      <div class="error-message">
+        <p>{{ error }}</p>
+      </div>
+      <div class="button-row">
+        <router-link to="/" class="btn btn-primary"> Back to Home </router-link>
+        <button class="btn btn-primary" style="margin-left: 20px" @click="handleModalRetry">
+          Retry Verification
+        </button>
+      </div>
     </div>
 
-    <div v-if="order" class="confirmation-container">
+    <div v-else-if="order" class="confirmation-container">
       <div v-if="order.status === 'CANCELLED'" class="cancelled-header">
         <div class="cancelled-icon">✕</div>
         <h1>Order Cancelled</h1>
@@ -219,7 +226,6 @@ export default {
     const router = useRouter()
     const ecommerceStore = useEcommerceStore()
     const authStore = useAuthStore()
-
     const order = ref(null)
     const loading = ref(true)
     const error = ref(null)
@@ -227,7 +233,6 @@ export default {
     const isCancelling = ref(false)
     const showEmailModal = ref(false)
     const emailVerifying = ref(false)
-    const emailError = ref(null)
 
     const canCancelOrder = computed(() => {
       if (!order.value) return false
@@ -237,13 +242,12 @@ export default {
     const fetchOrder = async (customerEmail = null) => {
       loading.value = true
       error.value = null
-      emailError.value = ''
 
       try {
         const orderId = route.params.id
         let url = `/api/orders/${orderId}`
 
-        if (authStore && authStore.userId) {
+        if (authStore.userId) {
           url += `?userId=${authStore.userId}`
         } else if (customerEmail) {
           url += `?customerEmail=${encodeURIComponent(customerEmail)}`
@@ -256,29 +260,14 @@ export default {
         const response = await fetch(url)
 
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Order not found')
-          } else if (response.status === 403) {
-            if (!authStore.user) {
-              emailError.value = 'Invalid email address for this order'
-              showEmailModal.value = true
-              loading.value = false
-              return
-            }
-            throw new Error('Access denied - this order does not belong to you')
-          } else if (response.status === 401) {
-            showEmailModal.value = true
-            loading.value = false
-            return
-          } else {
-            throw new Error('Failed to load order')
-          }
+          error.value = await response.text()
+          showEmailModal.value = false
+        } else {
+          order.value = await response.json()
+          showEmailModal.value = false
         }
-
-        order.value = await response.json()
-        showEmailModal.value = false
-      } catch (err) {
-        error.value = err.message
+      } catch (error) {
+        error.value = error.message
         showEmailModal.value = false
       } finally {
         loading.value = false
@@ -287,9 +276,10 @@ export default {
 
     const verifyEmail = async (email) => {
       emailVerifying.value = true
-      emailError.value = ''
-      await fetchOrder(email)
-      emailVerifying.value = false
+      const success = await fetchOrder(email)
+      if (success) {
+        emailVerifying.value = false
+      }
     }
 
     const handleModalCancel = () => {
@@ -300,6 +290,12 @@ export default {
       router.push('/')
     }
 
+    const handleModalRetry = () => {
+      error.value = null
+      emailVerifying.value = false
+      showEmailModal.value = true
+    }
+
     const cancelOrder = async () => {
       if (!order.value || isCancelling.value) return
 
@@ -307,11 +303,10 @@ export default {
       cancelError.value = null
       try {
         await ecommerceStore.cancelOrder(order.value.id)
-        order.value.status = 'CANCELLED'
-      } catch (err) {
+        order.value.status = result.status
+      } catch (error) {
         console.error('Failed to cancel order:', err)
-        cancelError.value = 'Failed to cancel order. Order has already been cancelled.'
-        order.value.status = 'CANCELLED'
+        cancelError.value = error.message
       } finally {
         isCancelling.value = false
       }
@@ -369,10 +364,10 @@ export default {
       cancelOrder,
       showEmailModal,
       emailVerifying,
-      emailError,
       verifyEmail,
       handleModalCancel,
       handleModalClose,
+      handleModalRetry,
       formatDate,
       formatPrice,
       formatStatus,

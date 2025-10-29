@@ -3,7 +3,9 @@ import { useAuthStore } from '@/stores/authStore'
 
 export const useEcommerceStore = defineStore('ecommerce', {
   state: () => ({
+    products: [],
     inventory: [],
+    featuredProducts: [],
     cart: [],
     loading: false,
     error: null,
@@ -62,7 +64,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
         discount = Math.min(discount, subtotal)
       }
       const total = subtotal - discount
-      return total.toFixed(2)
+      return parseFloat(total.toFixed(2))
     },
 
     couponDiscount: (state) => {
@@ -85,16 +87,10 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
       return parseFloat(Math.min(discount, subtotal).toFixed(2))
     },
-
-    featuredProducts: (state) => {
-      return state.inventory.filter(
-        (product) => product.isFeatured === true && product.isActive === true && product.stock > 0,
-      )
-    },
   },
 
   actions: {
-    async fetchProducts() {
+    async storeFetchProducts() {
       this.loading = true
       this.error = null
 
@@ -103,9 +99,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
         if (!response.ok) {
           throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
         }
-        const products = await response.json()
-        this.inventory = products
-        this.inventory.filter((p) => p.isActive)
+        this.products = await response.json()
+        this.inventory = this.products.filter((p) => p.stock > 0)
+        this.featuredProducts = this.inventory.filter((p) => p.isFeatured)
       } catch (error) {
         this.error = error.message
       } finally {
@@ -118,7 +114,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       let hasChanges = false
 
       try {
-        await this.fetchProducts()
+        await this.storeFetchProducts()
 
         for (let i = this.cart.length - 1; i >= 0; i--) {
           const cartItem = this.cart[i]
@@ -171,7 +167,9 @@ export const useEcommerceStore = defineStore('ecommerce', {
     },
 
     async initializeStore() {
-      await this.fetchProducts()
+      const authStore = useAuthStore()
+      await this.storeFetchProducts()
+      await authStore.fetchUserFavorites()
 
       this.loadFromLocalStorage()
     },
@@ -198,9 +196,10 @@ export const useEcommerceStore = defineStore('ecommerce', {
     },
 
     addToCart(productId, quantity) {
+      this.error = null
       const product = this.inventory.find((p) => p.id === productId)
       if (!product) {
-        console.error('Product not found:', productId)
+        this.error = `Product not found: ${productId}`
         return false
       }
 
@@ -209,15 +208,13 @@ export const useEcommerceStore = defineStore('ecommerce', {
       const totalRequestedQuantity = currentCartQuantity + quantity
 
       if (totalRequestedQuantity > product.stock) {
-        console.log(
-          `Insufficient stock. Requested total ${totalRequestedQuantity}, Available: ${product.stock}`,
-        )
+        this.error = `Insufficient stock. Requested total ${totalRequestedQuantity}, Available: ${product.stock} (includes cart quantity)`
         return false
       }
 
       if (existingItem) {
         existingItem.quantity += quantity
-        console.log(`Adding ${quantity} to cart. ${product.stock} remaining`)
+        this.error = `Adding ${quantity} to cart. ${product.stock} remaining`
       } else {
         this.cart.push({
           productId: productId,
@@ -226,6 +223,40 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
       this.saveCartToLocalStorage()
       return true
+    },
+
+    async toggleFavorite(id, productId) {
+      try {
+        const authStore = useAuthStore()
+        const response = await fetch(`/api/users/favorite/${productId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: authStore.user.id,
+            productId,
+          }),
+        })
+
+        if (!response.ok) {
+          this.error = 'Failed to favorite product'
+          return false
+        }
+
+        const data = await response.json()
+        authStore.user = {
+          ...authStore.user,
+          favorites: data.user.favorites,
+        }
+        authStore.saveAuthToStorage()
+        await authStore.fetchUserFavorites()
+        return true
+      } catch (error) {
+        console.error('Error favoriting product:', error)
+        this.error = 'Failed to favorite product'
+        return false
+      }
     },
 
     validateActiveCoupon() {
@@ -268,7 +299,13 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.couponError = ''
 
       if (!couponCode || !couponCode.trim()) {
-        this.couponError = 'Please enter a coupon code'
+        this.couponError = 'Please enter a coupon code.'
+        return false
+      }
+
+      if (!this.cart.length) {
+        this.couponError =
+          'Your cart is empty. Please add an item to your cart to apply this coupon.'
         return false
       }
 
@@ -307,8 +344,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     async createOrder(orderData) {
       const authStore = useAuthStore()
-      console.log('User object:', authStore.user)
-      console.log('User ID:', authStore.user?.id)
+
       try {
         const response = await fetch('/api/orders', {
           method: 'POST',
@@ -350,7 +386,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       }
     },
 
-    async fetchUserOrders(page = 1, limit = 20) {
+    async storeFetchUserOrders(page = 1, limit = 20) {
       const authStore = useAuthStore()
 
       if (!authStore.user) {
@@ -412,15 +448,6 @@ export const useEcommerceStore = defineStore('ecommerce', {
       return {
         customer,
         items: cartItems,
-      }
-    },
-
-    async completeOrder(orderData) {
-      try {
-        const result = await this.createOrder(orderData)
-        return result
-      } catch (error) {
-        throw error
       }
     },
 

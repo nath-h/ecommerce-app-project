@@ -866,14 +866,14 @@ const getBadgeClass = (action) => {
 const setActiveTab = (tab) => {
   activeTab.value = tab
   if (tab === 'actions' && adminActions.value.length === 0) {
-    fetchAdminActions()
+    fetchAllAdminActionsAsAdmin()
   } else if (tab === 'coupons' && coupons.value.length === 0) {
-    fetchCoupons()
+    fetchAllCouponsAsAdmin()
   } else if (tab === 'products' && products.value.length === 0) {
-    fetchProducts()
+    fetchAllProductsAsAdmin()
   }
   else if (tab === 'orders' && orders.value.length === 0) {
-    fetchOrders()
+    fetchAllOrdersAsAdmin()
   }
 }
 
@@ -915,7 +915,7 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   return response
 }
 
-const fetchUsers = async () => {
+const fetchAllUsersAsAdmin = async () => {
   loadingUsers.value = true
   try {
     const response = await makeAuthenticatedRequest('/api/users/admin')
@@ -924,17 +924,17 @@ const fetchUsers = async () => {
     if (response.ok) {
       users.value = data.users
     } else {
-      throw new Error(data.error || 'Failed to fetch users')
+      throw new Error(data.error || 'Failed to fetch users as admin')
     }
   } catch (error) {
-    console.error('Error fetching users:', error)
+    console.error('Error fetching users as admin:', error)
     showMessage(error.message, 'error')
   } finally {
     loadingUsers.value = false
   }
 }
 
-const fetchCoupons = async () => {
+const fetchAllCouponsAsAdmin = async () => {
   loadingCoupons.value = true
 
   try {
@@ -944,17 +944,17 @@ const fetchCoupons = async () => {
     if (response.ok) {
       coupons.value = data.coupons
     } else {
-      throw new Error(data.error || 'Failed to fetch coupons')
+      throw new Error(data.error || 'Failed to fetch coupons as admin')
     }
   } catch (error) {
-    console.error('Error fetching coupons', error)
+    console.error('Error fetching coupons as admin:', error)
     showMessage(error.message, 'error')
   } finally {
     loadingCoupons.value = false
   }
 }
 
-const fetchProducts = async () => {
+const fetchAllProductsAsAdmin = async () => {
   loadingProducts.value = true
 
   try {
@@ -964,17 +964,17 @@ const fetchProducts = async () => {
     if (response.ok) {
       products.value = data.products
     } else {
-      throw new Error(data.error || 'Failed to fetch products')
+      throw new Error(data.error || 'Failed to fetch products as admin')
     }
   } catch (error) {
-    console.error('Error fetching products', error)
+    console.error('Error fetching products as admin:', error)
     showMessage(error.message, 'error')
   } finally {
     loadingProducts.value = false
   }
 }
 
-const fetchOrders = async () => {
+const fetchAllOrdersAsAdmin = async () => {
   loadingOrders.value = true
 
   try {
@@ -984,10 +984,10 @@ const fetchOrders = async () => {
     if (response.ok) {
       orders.value = data.orders
     } else {
-      throw new Error(data.error || 'Failed to fetch orders')
+      throw new Error(data.error || 'Failed to fetch orders as admin')
     }
   } catch (error) {
-    console.error('Error fetching orders', error)
+    console.error('Error fetching orders as admin:', error)
     showMessage(error.message, 'error')
   } finally {
     loadingOrders.value = false
@@ -1032,7 +1032,7 @@ const handleOrderSubmit = async () => {
       showMessage(data.message)
       resetOrderForm()
       scrollFormIntoView();
-      await Promise.all([fetchOrders(), fetchAdminActions()])
+      await Promise.all([fetchAllOrdersAsAdmin(), fetchAllAdminActionsAsAdmin()])
     } else {
       throw new Error(data.error || 'Operation failed')
     }
@@ -1100,7 +1100,7 @@ const handleCouponSubmit = async () => {
     showMessage(data.message)
     resetCouponForm()
     scrollFormIntoView();
-    await Promise.all([fetchCoupons(), fetchAdminActions()])
+    await Promise.all([fetchAllCouponsAsAdmin(), fetchAllAdminActionsAsAdmin()])
   } catch (error) {
     console.error('Error submitting coupon:', error)
     showMessage(error.message, 'error')
@@ -1186,7 +1186,7 @@ const handleProductSubmit = async () => {
     showMessage(data.message)
     resetProductForm()
     scrollFormIntoView();
-    await Promise.all([fetchProducts(), fetchAdminActions(), store.initializeStore()])
+    await Promise.all([fetchAllProductsAsAdmin(), fetchAllAdminActionsAsAdmin(), store.initializeStore()])
   } catch (error) {
     console.error('Error submitting product:', error)
     showMessage(error.message, 'error')
@@ -1236,7 +1236,7 @@ const formatCouponType = (type) => {
   return type.charAt(0) + type.slice(1).toLowerCase()
 }
 
-const fetchAdminActions = async () => {
+const fetchAllAdminActionsAsAdmin = async () => {
   loadingActions.value = true
   try {
     const response = await makeAuthenticatedRequest('/api/admin/actions')
@@ -1326,7 +1326,7 @@ const handleUserSubmit = async () => {
       showMessage(data.message)
       resetUserForm()
       scrollFormIntoView();
-      await Promise.all([fetchUsers(), fetchAdminActions()])
+      await Promise.all([fetchAllUsersAsAdmin(), fetchAllAdminActionsAsAdmin()])
     } else {
       throw new Error(data.error || 'Operation failed')
     }
@@ -1466,11 +1466,11 @@ const formatActionDetails = (details) => {
 
 onMounted(() => {
   if (authStore.isAdmin) {
-    fetchUsers()
-    fetchCoupons()
-    fetchAdminActions()
-    fetchProducts()
-    fetchOrders()
+    fetchAllUsersAsAdmin()
+    fetchAllCouponsAsAdmin()
+    fetchAllAdminActionsAsAdmin()
+    fetchAllProductsAsAdmin()
+    fetchAllOrdersAsAdmin()
   }
 })
 </script>

@@ -1,13 +1,10 @@
 <template>
-  <div
-    v-if="show"
-    class="email-modal-overlay"
-    @click="handleOverlayClick">
+  <div v-if="show" class="email-modal-overlay" @click="handleOverlayClick">
     <div class="email-modal">
       <h3>Verify Your Order</h3>
       <p>
-        Please enter the email address you used when placing this order, or the email address associated with your
-        account if you were logged in when placing it:
+        Please enter the email address you used when placing this order, or the email address
+        associated with your account if you were logged in when placing it:
       </p>
       <form @submit.prevent="handleSubmit">
         <input
@@ -17,26 +14,18 @@
           required
           class="email-input"
           ref="emailInputRef"
-          :disabled="loading" />
+          :disabled="loading"
+        />
         <div class="modal-actions">
-          <button
-            type="button"
-            @click="handleCancel"
-            class="btn btn-secondary"
-            :disabled="loading">
+          <button type="button" @click="handleCancel" class="btn btn-secondary" :disabled="loading">
             Cancel
           </button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="!emailInput.trim() || loading">
+          <button type="submit" class="btn btn-primary" :disabled="!emailInput.trim() || loading">
             {{ loading ? 'Verifying...' : 'Verify' }}
           </button>
         </div>
       </form>
-      <div
-        v-if="error"
-        class="email-error">
+      <div v-if="error" class="error">
         {{ error }}
       </div>
     </div>
@@ -44,58 +33,58 @@
 </template>
 
 <script setup>
-  import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick } from 'vue'
 
-  const props = defineProps({
-    show: {
-      type: Boolean,
-      default: false,
-    },
-    loading: {
-      type: Boolean,
-      default: false,
-    },
-    error: {
-      type: String,
-      default: '',
-    },
-  });
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  error: {
+    type: String,
+    default: '',
+  },
+})
 
-  const emit = defineEmits(['verify', 'cancel', 'close']);
+const emit = defineEmits(['verify', 'cancel', 'close'])
 
-  const emailInput = ref('');
-  const emailInputRef = ref(null);
+const emailInput = ref('')
+const emailInputRef = ref(null)
 
-  watch(
-    () => props.show,
-    async newValue => {
-      if (newValue) {
-        emailInput.value = '';
-        await nextTick();
-        emailInputRef.value?.focus();
-      }
+watch(
+  () => props.show,
+  async (newValue) => {
+    if (newValue) {
+      emailInput.value = ''
+      await nextTick()
+      emailInputRef.value?.focus()
     }
-  );
+  },
+)
 
-  const handleSubmit = () => {
-    if (emailInput.value.trim()) {
-      emit('verify', emailInput.value.trim());
-    }
-  };
+const handleSubmit = () => {
+  if (emailInput.value.trim()) {
+    emit('verify', emailInput.value.trim())
+  }
+}
 
-  const handleCancel = () => {
-    emit('cancel');
-  };
+const handleCancel = () => {
+  emit('cancel')
+}
 
-  const handleOverlayClick = event => {
-    if (event.target === event.currentTarget) {
-      emit('close');
-    }
-  };
+const handleOverlayClick = (event) => {
+  if (event.target === event.currentTarget) {
+    emit('close')
+  }
+}
 </script>
 
 <style scoped>
-  .email-modal-overlay {
+.email-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -190,7 +179,7 @@
   opacity: 0.6;
 }
 
-.email-error {
+.error {
   color: #dc3545;
   margin-top: 10px;
   padding: 8px;

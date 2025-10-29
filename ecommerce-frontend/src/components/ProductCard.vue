@@ -1,5 +1,11 @@
 <template>
   <div class="card">
+    <div class="favorite-star" @click="toggleFavorite">
+      <span>{{ isFavorited ? '★' : '☆' }}</span>
+      <span class="favorite-tooltip">{{
+        isFavorited ? 'Click to remove favorite' : 'Click to add favorite'
+      }}</span>
+    </div>
     <div class="card-title">
       <router-link :to="`/products/${product.id}`" class="product-title-link">
         {{ product.name }}
@@ -82,18 +88,22 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useEcommerceStore } from '@/stores/ecommerce'
+import { useAuthStore } from '@/stores/authStore'
+import { storeToRefs } from 'pinia'
 
 export default {
   props: ['product'],
   setup(props) {
     const store = useEcommerceStore()
+    const authStore = useAuthStore()
     const quantity = ref(0)
     const errorMessage = ref('')
     const successMessage = ref('')
     const iconElement = ref(null)
     const iconClass = ref('')
+    const { user } = storeToRefs(authStore)
     const getIconClass = (icon) => {
       const fallbackIcon = 'spoon-and-fork'
       const iconName = icon || fallbackIcon
@@ -110,7 +120,7 @@ export default {
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       if (iconElement.value) {
         const computed = window.getComputedStyle(iconElement.value, '::before')
         const content = computed.getPropertyValue('content')
@@ -120,6 +130,23 @@ export default {
         }
       }
     })
+
+    const isFavorited = computed(() => {
+      if (!user.value?.favorites) return false
+      return user.value.favorites.some((fav) => fav.id === props.product.id)
+    })
+
+    const toggleFavorite = async () => {
+      if (!authStore.user) {
+        errorMessage.value = 'You must be logged in to favorite products'
+        return
+      }
+      const success = await store.toggleFavorite(authStore.user.id, props.product.id)
+      if (success) {
+        await authStore.fetchUserFavorites()
+      }
+    }
+
     const handleAddToCart = () => {
       errorMessage.value = ''
       successMessage.value = ''
@@ -146,11 +173,6 @@ export default {
       }
       const success = store.addToCart(props.product.id, quantity.value)
       if (success) {
-        console.log(
-          `Successfully added ${quantity.value} item(s) to cart! Stock: ${
-            props.product.stock
-          } Quantity in cart: ${totalRequestedQuantity} Available: ${props.product.stock - totalRequestedQuantity} `,
-        )
         errorMessage.value = ''
         successMessage.value = `Successfully added ${quantity.value} item(s) to cart!`
         quantity.value = 0
@@ -164,6 +186,7 @@ export default {
 
     return {
       store,
+      authStore,
       quantity,
       validateQuantity,
       errorMessage,
@@ -172,6 +195,9 @@ export default {
       getIconClass,
       iconElement,
       iconClass,
+      isFavorited,
+      toggleFavorite,
+      storeToRefs,
     }
   },
 }
@@ -259,5 +285,39 @@ export default {
   padding: 0.75rem;
   border-radius: 5px;
   border: 1px solid #c3e6cb;
+}
+
+.favorite-star {
+  position: absolute;
+  right: 12px;
+  cursor: pointer;
+  font-size: 2rem;
+  color: #280d14;
+  z-index: 2;
+  transition: color 0.2s;
+}
+
+.favorite-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: -15px;
+  right: 0;
+  background: #333;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.favorite-star:hover .favorite-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+.card {
+  position: relative;
 }
 </style>

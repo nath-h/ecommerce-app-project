@@ -22,10 +22,11 @@ model User {
   adminActions AdminAction[]
   cart         Cart?
   orders       Order[]
+  favorites   Product[]     @relation("UserFavorites")
 }
 
 model Product {
-  id          String      @id @default(cuid())
+  id          String      @id @default(nanoid(8))
   name        String      @unique
   description String?
   price       Decimal     @db.Decimal(6, 2)
@@ -38,10 +39,11 @@ model Product {
   updatedAt   DateTime    @updatedAt
   cartItems   CartItem[]
   orderItems  OrderItem[]
+  favoritedBy User[]      @relation("UserFavorites")
 }
 
 model Order {
-  id                String      @id @default(cuid())
+  id                String      @id @default(nanoid(8))
   userId            Int?
   subtotal          Decimal     @db.Decimal(6, 2)
   discount          Decimal?    @db.Decimal(6, 2)
@@ -64,7 +66,7 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
+  id        String   @id @default(nanoid(8))
   orderId   String
   productId String
   quantity  Int
@@ -76,7 +78,7 @@ model OrderItem {
 }
 
 model Coupon {
-  id          String     @id @default(cuid())
+  id          String     @id @default(nanoid(8))
   code        String     @unique
   type        CouponType
   value       Decimal    @db.Decimal(6, 2)
@@ -90,7 +92,7 @@ model Coupon {
 }
 
 model Cart {
-  id        String     @id @default(cuid())
+  id        String     @id @default(nanoid(8))
   userId    Int?       @unique
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -99,9 +101,9 @@ model Cart {
 }
 
 model CartItem {
-  id        String  @id @default(cuid())
-  cartId    String
-  productId String
+  id        String  @id @default(nanoid(8))
+  cartId    String  @default(nanoid(8))
+  productId String @default(nanoid(8))
   quantity  Int
   cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
@@ -110,7 +112,7 @@ model CartItem {
 }
 
 model AdminAction {
-  id         String          @id @default(cuid())
+  id         String          @id @default(nanoid(8))
   adminId    Int
   action     AdminActionType
   entityType String

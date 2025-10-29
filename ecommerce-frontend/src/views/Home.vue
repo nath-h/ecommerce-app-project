@@ -22,7 +22,7 @@
       <div v-if="!isSearching">
         <h1>Featured Products</h1>
 
-        <div class="recommended">
+        <div class="featured">
           <ProductCard
             v-for="(product, index) in store.featuredProducts"
             :key="product.id"

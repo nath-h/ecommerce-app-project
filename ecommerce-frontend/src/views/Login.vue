@@ -1,21 +1,13 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <div
-        v-if="showLogoutMessage"
-        class="logout-success-message">
+      <div v-if="showLogoutMessage" class="logout-success-message">
         {{ logoutMessage }}
-        <button
-          @click="dismissLogoutMessage"
-          class="dismiss-btn">
-          x
-        </button>
+        <button @click="dismissLogoutMessage" class="dismiss-btn">x</button>
       </div>
 
       <h2>Log In</h2>
-      <form
-        @submit.prevent="handleLogin"
-        class="login-form">
+      <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
           <input
@@ -24,7 +16,8 @@
             type="email"
             required
             :disabled="loading"
-            class="form-input" />
+            class="form-input"
+          />
         </div>
 
         <div class="form-group">
@@ -35,25 +28,23 @@
             type="password"
             required
             :disabled="loading"
-            class="form-input" />
+            class="form-input"
+          />
         </div>
 
-        <div
-          v-if="error"
-          class="error-message">
+        <div v-if="error" class="error-message">
           {{ error }}
         </div>
 
-        <div
-          v-if="success"
-          class="success-message">
+        <div v-if="success" class="success-message">
           {{ success }}
         </div>
 
         <button
           type="submit"
           :disabled="loading || !formData.email || !formData.password"
-          class="login-button">
+          class="login-button"
+        >
           {{ loading ? 'Logging in...' : 'Login' }}
         </button>
       </form>
@@ -71,139 +62,140 @@
 </template>
 
 <script>
-  import { ref, onMounted, onUnmounted, watch } from 'vue';
-  import { useRouter, useRoute } from 'vue-router';
-  import { useAuthStore } from '@/stores/authStore';
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 
-  export default {
-    name: 'LoginPage',
-    setup() {
-      const router = useRouter();
-      const route = useRoute();
-      const authStore = useAuthStore();
-      const showLogoutMessage = ref(false);
-      const logoutMessage = ref('');
-      const countdownInterval = ref(null);
-      const redirectTimeout = ref(null);
-      const isRedirecting = ref(false);
+export default {
+  name: 'LoginPage',
+  setup() {
+    const router = useRouter()
+    const route = useRoute()
+    const authStore = useAuthStore()
+    const showLogoutMessage = ref(false)
+    const logoutMessage = ref('')
+    const countdownInterval = ref(null)
+    const redirectTimeout = ref(null)
+    const isRedirecting = ref(false)
 
-      const dismissLogoutMessage = () => {
-        showLogoutMessage.value = false;
-        router.replace({ path: route.path });
-      };
+    const dismissLogoutMessage = () => {
+      showLogoutMessage.value = false
+      router.replace({ path: route.path })
+    }
 
-      const formData = ref({
-        email: '',
-        password: '',
-      });
+    const formData = ref({
+      email: '',
+      password: '',
+    })
 
-      const loading = ref(false);
-      const error = ref('');
-      const success = ref('');
+    const loading = ref(false)
+    const error = ref('')
+    const success = ref('')
 
-      const cleanupTimeouts = () => {
-        if (countdownInterval.value) {
-          clearInterval(countdownInterval.value);
-          countdownInterval.value = null;
+    const cleanupTimeouts = () => {
+      if (countdownInterval.value) {
+        clearInterval(countdownInterval.value)
+        countdownInterval.value = null
+      }
+      if (redirectTimeout.value) {
+        clearTimeout(redirectTimeout.value)
+        redirectTimeout.value = null
+      }
+    }
+
+    watch(
+      () => route.path,
+      (newPath) => {
+        if (newPath !== '/login' && isRedirecting.value) {
+          cleanupTimeouts()
         }
-        if (redirectTimeout.value) {
-          clearTimeout(redirectTimeout.value);
-          redirectTimeout.value = null;
-        }
-      };
+      },
+    )
 
-      watch(
-        () => route.path,
-        newPath => {
-          if (newPath !== '/login' && isRedirecting.value) {
-            cleanupTimeouts();
-          }
-        }
-      );
+    const handleLogin = async (credentials) => {
+      error.value = ''
+      loading.value = true
+      success.value = ''
 
-      const handleLogin = async credentials => {
-        error.value = '';
-        loading.value = true;
-        success.value = '';
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.value.email.trim().toLowerCase(),
+            password: formData.value.password,
+          }),
+        })
 
-        try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: formData.value.email.trim().toLowerCase(),
-              password: formData.value.password,
-            }),
-          });
+        const data = await response.json()
 
-          const data = await response.json();
-
-          if (response.ok) {
-            authStore.setUser(data.user, data.token);
-            isRedirecting.value = true;
-            let countdown = 3;
-            success.value = `Login successful. Redirecting in ${countdown}s...`;
-            countdownInterval.value = setInterval(() => {
-              countdown--;
-              if (countdown > 0) {
-                success.value = `Login successful. Redirecting in ${countdown}s...`;
-              } else {
-                success.value = 'Redirecting...';
-                clearInterval(countdownInterval.value);
-                countdownInterval.value = null;
-              }
-            }, 1000);
-            redirectTimeout.value = setTimeout(() => {
-              if (isRedirecting.value && route.path === '/login') {
-                router.push('/');
-              }
-              cleanupTimeouts();
-            }, 3000);
-          } else {
-            error.value = data.error || 'Login failed';
-          }
-        } catch (err) {
-          console.error('Login error:', err);
-          error.value = 'Network error. Please check if the server is running.';
-        } finally {
-          loading.value = false;
-        }
-      };
-
-      onMounted(() => {
-        if (route.query.logoutSuccess === 'true') {
-          logoutMessage.value = 'You have successfully logged out!';
-          showLogoutMessage.value = true;
-          setTimeout(() => {
-            if (showLogoutMessage.value) {
-              dismissLogoutMessage();
+        if (response.ok) {
+          authStore.setUser(data.user, data.token)
+          isRedirecting.value = true
+          let countdown = 3
+          success.value = `Login successful. Redirecting in ${countdown}s...`
+          countdownInterval.value = setInterval(() => {
+            countdown--
+            if (countdown > 0) {
+              success.value = `Login successful. Redirecting in ${countdown}s...`
+            } else {
+              success.value = 'Redirecting...'
+              clearInterval(countdownInterval.value)
+              countdownInterval.value = null
             }
-          }, 5000);
+          }, 1000)
+          redirectTimeout.value = setTimeout(() => {
+            if (isRedirecting.value && route.path === '/login') {
+              const redirectPath = route.query.redirect || '/'
+              router.push(redirectPath)
+            }
+            cleanupTimeouts()
+          }, 3000)
+        } else {
+          error.value = data.error || 'Login failed'
         }
-      });
+      } catch (err) {
+        console.error('Login error:', err)
+        error.value = 'Network error. Please check if the server is running.'
+      } finally {
+        loading.value = false
+      }
+    }
 
-      onUnmounted(() => {
-        cleanupTimeouts();
-      });
+    onMounted(() => {
+      if (route.query.logoutSuccess === 'true') {
+        logoutMessage.value = 'You have successfully logged out!'
+        showLogoutMessage.value = true
+        setTimeout(() => {
+          if (showLogoutMessage.value) {
+            dismissLogoutMessage()
+          }
+        }, 5000)
+      }
+    })
 
-      return {
-        formData,
-        loading,
-        error,
-        handleLogin,
-        success,
-        showLogoutMessage,
-        logoutMessage,
-        dismissLogoutMessage,
-      };
-    },
-  };
+    onUnmounted(() => {
+      cleanupTimeouts()
+    })
+
+    return {
+      formData,
+      loading,
+      error,
+      handleLogin,
+      success,
+      showLogoutMessage,
+      logoutMessage,
+      dismissLogoutMessage,
+    }
+  },
+}
 </script>
 
 <style scoped>
-  .login-container {
+.login-container {
   min-height: 50vh;
   display: flex;
   align-items: center;

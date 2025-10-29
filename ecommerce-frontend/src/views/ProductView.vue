@@ -1,26 +1,16 @@
 <template>
   <main class="wrapper">
-    <div
-      v-if="loading"
-      class="loading">
+    <div v-if="loading" class="loading">
       <p>Loading product...</p>
     </div>
 
-    <div
-      v-else-if="error"
-      class="error">
+    <div v-else-if="error" class="error">
       <h2>Product Not Found</h2>
       <p>{{ error }}</p>
-      <router-link
-        to="/products"
-        class="btn btn-primary">
-        Back to Products
-      </router-link>
+      <router-link to="/products" class="btn btn-primary"> Back to Products </router-link>
     </div>
 
-    <div
-      v-else-if="product"
-      class="product-page">
+    <div v-else-if="product" class="product-page">
       <nav class="breadcrumb">
         <router-link to="/">Home</router-link>
         <span class="separator">/</span>
@@ -35,7 +25,15 @@
         </div>
 
         <div class="product-details">
-          <h1 class="product-title">{{ product.name }}</h1>
+          <h1 class="product-title">
+            {{ product.name }}
+            <span class="favorite-star" @click="toggleFavorite">
+              {{ isFavorited ? '★' : '☆' }}
+              <span class="favorite-tooltip">
+                {{ isFavorited ? 'Click to remove favorite' : 'Click to add favorite' }}
+              </span>
+            </span>
+          </h1>
 
           <div class="product-info">
             <div class="info-row">
@@ -50,17 +48,13 @@
 
             <div class="info-row">
               <label>Stock:</label>
-              <span
-                class="product-stock"
-                :class="{ 'low-stock': product.stock <= 5 }">
+              <span class="product-stock" :class="{ 'low-stock': product.stock <= 5 }">
                 {{ product.stock }} available
               </span>
             </div>
           </div>
 
-          <div
-            v-if="product.description"
-            class="product-description">
+          <div v-if="product.description" class="product-description">
             <h3>Description</h3>
             <p>{{ product.description }}</p>
           </div>
@@ -69,10 +63,7 @@
             <div class="quantity-selector">
               <label for="quantity">Quantity:</label>
               <div class="quantity-controls">
-                <button
-                  @click="decrementQuantity"
-                  :disabled="quantity <= 0"
-                  class="quantity-btn">
+                <button @click="decrementQuantity" :disabled="quantity <= 0" class="quantity-btn">
                   -
                 </button>
                 <input
@@ -81,41 +72,36 @@
                   v-model.number="quantity"
                   min="0"
                   :max="product.stock"
-                  class="quantity-input" />
+                  class="quantity-input"
+                />
                 <button
                   @click="incrementQuantity"
                   :disabled="quantity >= product.stock"
-                  class="quantity-btn">
+                  class="quantity-btn"
+                >
                   +
                 </button>
               </div>
             </div>
-            <div
-              v-if="errorMessage"
-              class="error-message">
-              {{ errorMessage }}
+            <div v-if="store.error" class="error-message">
+              {{ store.error }}
             </div>
-            <div
-              v-if="successMessage"
-              class="success-message">
+            <div v-if="successMessage" class="success-message">
               {{ successMessage }}
             </div>
 
             <button
               @click="handleAddToCart"
               class="add-to-cart-btn"
-              :disabled="quantity <= 0 || quantity > product.stock || product.stock <= 0">
+              :disabled="quantity <= 0 || quantity > product.stock || product.stock <= 0"
+            >
               <span v-if="product.stock <= 0">Out of stock</span>
               <span v-else>Add to cart</span>
             </button>
           </div>
 
           <div class="navigation-section">
-            <router-link
-              to="/products"
-              class="btn btn-secondary">
-              Back to products
-            </router-link>
+            <router-link to="/products" class="btn btn-primary"> Back to products </router-link>
           </div>
         </div>
       </div>
@@ -124,112 +110,133 @@
 </template>
 
 <script>
-  import { ref, onMounted, computed } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { useEcommerceStore } from '@/stores/ecommerce';
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useEcommerceStore } from '@/stores/ecommerce'
+import { useAuthStore } from '@/stores/authStore'
+import { storeToRefs } from 'pinia'
 
-  export default {
-    name: 'ProductView',
-    setup() {
-      const route = useRoute();
-      const store = useEcommerceStore();
+export default {
+  name: 'ProductView',
+  setup() {
+    const route = useRoute()
+    const store = useEcommerceStore()
+    const authStore = useAuthStore()
+    const { user } = storeToRefs(authStore)
+    const product = ref(null)
+    const loading = ref(true)
+    const error = ref(null)
+    const quantity = ref(1)
+    const errorMessage = ref('')
+    const successMessage = ref('')
 
-      const product = ref(null);
-      const loading = ref(true);
-      const error = ref(null);
-      const quantity = ref(1);
-      const errorMessage = ref('');
-      const successMessage = ref('');
+    const productId = computed(() => route.params.id)
 
-      const productId = computed(() => route.params.id);
+    const fetchProduct = async () => {
+      try {
+        loading.value = true
+        error.value = null
 
-      const fetchProduct = async () => {
-        try {
-          loading.value = true;
-          error.value = null;
+        const response = await fetch(`/api/products/${productId.value}`)
 
-          const response = await fetch(`/api/products/${productId.value}`);
-
-          if (!response.ok) {
-            if (response.status === 404) {
-              throw new Error('Product not found');
-            }
-            throw new Error('Failed to fetch product');
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Product not found')
           }
-          product.value = await response.json();
-        } catch (err) {
-          console.error('Error fetching product:', err);
-          error.value = err.message;
-        } finally {
-          loading.value = false;
+          throw new Error('Failed to fetch product')
         }
-      };
+        product.value = await response.json()
+      } catch (err) {
+        console.error('Error fetching product:', err)
+        error.value = err.message
+      } finally {
+        loading.value = false
+      }
+    }
 
-      const incrementQuantity = () => {
-        if (quantity.value < product.value.stock) {
-          quantity.value++;
-        }
-      };
+    const isFavorited = computed(() => {
+      if (!user.value?.favorites) return false
+      return user.value.favorites.some((fav) => fav.id === product.value?.id)
+    })
 
-      const decrementQuantity = () => {
-        if (quantity.value > 0) {
-          quantity.value--;
-        }
-      };
+    const toggleFavorite = async () => {
+      if (!authStore.user) {
+        errorMessage.value = 'You must be logged in to favorite products'
+        return
+      }
+      const success = await store.toggleFavorite(authStore.user.id, product.value.id)
+      if (success) {
+        await authStore.fetchUserFavorites()
+      }
+    }
 
-      const handleAddToCart = () => {
-        errorMessage.value = '';
-        successMessage.value = '';
+    const incrementQuantity = () => {
+      if (quantity.value < product.value.stock) {
+        quantity.value++
+      }
+    }
 
-        const existingCartItem = store.cart.find(item => item.name === product.value.name);
-        const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0;
-        const remainingStock = product.value.stock - currentCartQuantity;
+    const decrementQuantity = () => {
+      if (quantity.value > 0) {
+        quantity.value--
+      }
+    }
 
-        if (remainingStock === 0) {
-          errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`;
-          quantity.value = 0;
-          return;
-        } else if (quantity.value > remainingStock) {
-          errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${remainingStock} more in stock. (${currentCartQuantity} already in cart)`;
-          quantity.value = 0;
-          return;
-        }
-        const success = store.addToCart(product.value.name, quantity.value);
-        if (success) {
-          const addedQuantity = quantity.value;
-          quantity.value = 0;
-          errorMessage.value = '';
-          successMessage.value = `Successfully added ${addedQuantity} item(s) to cart!`;
-          setTimeout(() => {
-            successMessage.value = '';
-          }, 3000);
-        } else {
-          errorMessage.value = 'Unable to add item to cart. Please try again.';
-        }
-      };
+    const handleAddToCart = () => {
+      errorMessage.value = ''
+      successMessage.value = ''
 
-      onMounted(() => {
-        fetchProduct();
-      });
+      const existingCartItem = store.enrichedCartItems.find((item) => item.id === product.value.id)
+      const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0
+      const remainingStock = product.value.stock - currentCartQuantity
 
-      return {
-        product,
-        loading,
-        error,
-        quantity,
-        incrementQuantity,
-        decrementQuantity,
-        store,
-        handleAddToCart,
-        errorMessage,
-        successMessage,
-      };
-    },
-  };
+      if (remainingStock === 0) {
+        errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`
+        quantity.value = 0
+        return
+      } else if (quantity.value > remainingStock) {
+        errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${remainingStock} more in stock. (${currentCartQuantity} already in cart)`
+        quantity.value = 0
+        return
+      }
+      const success = store.addToCart(product.value.id, quantity.value)
+      if (success) {
+        const addedQuantity = quantity.value
+        quantity.value = 1
+        errorMessage.value = ''
+        successMessage.value = `Successfully added ${addedQuantity} item(s) to cart!`
+        setTimeout(() => {
+          successMessage.value = ''
+        }, 3000)
+      } else {
+        errorMessage.value = 'Unable to add item to cart. Please try again.'
+      }
+    }
+
+    onMounted(() => {
+      fetchProduct()
+    })
+
+    return {
+      product,
+      loading,
+      error,
+      quantity,
+      incrementQuantity,
+      decrementQuantity,
+      store,
+      handleAddToCart,
+      errorMessage,
+      successMessage,
+      isFavorited,
+      toggleFavorite,
+    }
+  },
+}
 </script>
 
 <style scoped>
-  .wrapper {
+.wrapper {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -289,6 +296,7 @@
 }
 
 .product-title {
+  position: relative;
   font-size: 2.5rem;
   color: var(--cardTextColor);
   margin-bottom: 20px;
@@ -481,5 +489,35 @@
   padding: 0.75rem;
   border-radius: 5px;
   border: 1px solid #c3e6cb;
+}
+.favorite-star {
+  position: absolute;
+  right: 18px;
+  cursor: pointer;
+  font-size: 2rem;
+  color: #280d14;
+  z-index: 2;
+  transition: color 0.2s;
+}
+
+.favorite-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: -10px;
+  right: 0;
+  background: #333;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.favorite-star:hover .favorite-tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 </style>

@@ -138,6 +138,7 @@ router.post('/login', async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { favorites: true },
     });
 
     if (!user) {
@@ -180,6 +181,7 @@ router.post('/login', async (req, res) => {
         isAdmin: user.isAdmin,
         phone: user.phone,
         address: user.address,
+        favorites: user.favorites,
       },
       token,
     });
@@ -203,6 +205,7 @@ router.post('/refresh', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
+      include: { favorites: true },
     });
     if (!user || !user.isActive) {
       return res.status(401).json({
@@ -228,6 +231,7 @@ router.post('/refresh', async (req, res) => {
         isAdmin: user.isAdmin,
         phone: user.phone,
         address: user.address,
+        favorites: user.favorites,
       },
       token: newToken,
     });
