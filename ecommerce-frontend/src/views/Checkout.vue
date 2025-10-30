@@ -36,7 +36,13 @@
           </thead>
           <tbody>
             <tr v-for="item in enrichedCartItems" :key="item.productId">
-              <td>{{ item.name }}</td>
+              <td>
+                <i
+                  :class="getIconClass(item.icon)"
+                  :ref="(el) => setIconRef(el, `${item.productId}`)"
+                ></i
+                >{{ item.name }}
+              </td>
               <td>${{ item.price }}</td>
               <td>{{ item.quantity }}</td>
               <td>{{ $formatCurrency(item.total) }}</td>
@@ -223,8 +229,32 @@ export default {
       address: '',
       notes: '',
     })
+    const iconElements = ref({})
+    const getIconClass = (icon) => {
+      return `icofont-2x icofont-${icon}`
+    }
+    const setIconRef = (el, key) => {
+      if (el) {
+        iconElements.value[key] = el
+      }
+    }
+    const validateIcons = () => {
+      {
+        Object.values(iconElements.value).forEach((iconElement) => {
+          if (iconElement) {
+            const computed = window.getComputedStyle(iconElement, '::before')
+            const content = computed.getPropertyValue('content')
+
+            if (content === 'none' || content === '""' || !content) {
+              iconElement.className = 'icofont-2x icofont-spoon-and-fork'
+            }
+          }
+        })
+      }
+    }
 
     onMounted(async () => {
+      validateIcons()
       if (authStore.user && userPreferences.value) {
         customerInfo.value = {
           name: userPreferences.value.name || '',
@@ -332,6 +362,8 @@ export default {
       couponDiscount,
       couponError,
       userPreferences,
+      getIconClass,
+      setIconRef,
       isSubmitting,
       couponCode,
       customerInfo,
@@ -390,9 +422,11 @@ export default {
 
 .checkout-table th,
 .checkout-table td {
-  padding: 10px;
+  vertical-align: middle;
+  padding: 10px 10px;
   text-align: center;
   border-bottom: 1px solid #ddd;
+  font-size: 18px;
 }
 
 .checkout-table th {
@@ -566,5 +600,17 @@ export default {
   color: white;
   opacity: 90%;
   font-weight: bold;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

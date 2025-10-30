@@ -522,6 +522,13 @@
                       >
                         Edit
                       </button>
+                      <router-link :to="`/products/${product.id}`">
+                      <button
+                        class="btn btn-sb btn-outline"
+                      >
+                        View
+                      </button>
+                      </router-link>
                     </td>
                   </tr>
                 </tbody>

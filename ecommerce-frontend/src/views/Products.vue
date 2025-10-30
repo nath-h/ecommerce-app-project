@@ -1,53 +1,60 @@
 <template>
   <main class="wrapper">
-    <h1>Products</h1>
+    <h1>All Products</h1>
 
-    <ProductSearch
-      :products="store.inventory"
-      @search-active="handleSearchActive" />
-
-    <div
-      v-if="!isSearching"
-      class="card-container">
-      <ProductCard
-        v-for="(product, index) in store.inventory"
-        :key="product.id"
-        class="card"
-        :index="index"
-        :product="product" />
+    <div v-if="authStore.user && authStore.user.isAdmin">
+      <ProductSearch
+        :products="store.products"
+        :searchCategory="'all'"
+        title="All Products"
+        @search-update="handleSearchActive"
+      />
+    </div>
+    <div v-else>
+      <ProductSearch
+        :products="store.inventory"
+        :searchCategory="'all'"
+        title="All Products"
+        @search-update="handleSearchActive"
+      />
     </div>
   </main>
 </template>
 
 <script>
-  import ProductCard from '@/components/ProductCard.vue';
-  import ProductSearch from '@/components/ProductSearch.vue';
-  import { useEcommerceStore } from '@/stores/ecommerce';
+import ProductCard from '@/components/ProductCard.vue'
+import ProductSearch from '@/components/ProductSearch.vue'
+import { useEcommerceStore } from '@/stores/ecommerce'
+import { useAuthStore } from '@/stores/authStore'
 
-  export default {
-    components: {
-      ProductCard,
-      ProductSearch,
-    },
-    setup() {
-      const store = useEcommerceStore();
+export default {
+  components: {
+    ProductCard,
+    ProductSearch,
+  },
+  setup() {
+    const store = useEcommerceStore()
+    const authStore = useAuthStore()
 
-      return {
-        store,
-      };
+    return {
+      store,
+      authStore,
+    }
+  },
+  data() {
+    return {
+      isSearching: false,
+      sortBy: '',
+    }
+  },
+  methods: {
+    handleSearchActive() {
+      this.isSearching = isSearching
+      this.sortBy = sortBy
     },
-    data() {
-      return {
-        isSearching: false,
-      };
-    },
-    methods: {
-      handleSearchActive(isActive) {
-        this.isSearching = isActive;
-      },
-    },
-    onMounted() {
-      this.store.initializeStore();
-    },
-  };
+  },
+  onMounted() {
+    this.store.initializeStore()
+  },
+}
 </script>

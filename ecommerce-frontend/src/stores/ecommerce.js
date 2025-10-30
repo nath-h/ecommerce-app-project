@@ -95,11 +95,29 @@ export const useEcommerceStore = defineStore('ecommerce', {
       this.error = null
 
       try {
-        const response = await fetch('/api/products')
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
+        const authStore = useAuthStore()
+        let response
+        if (authStore.user && authStore.user.isAdmin) {
+          response = await fetch('/api/products/admin', {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              contentType: 'application/json',
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
+          }
+          const data = await response.json()
+          this.products = Array.isArray(data.products) ? data.products : []
+        } else {
+          response = await fetch('/api/products')
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
+          }
+          const data = await response.json()
+          this.products = Array.isArray(data) ? data : []
         }
-        this.products = await response.json()
         this.inventory = this.products.filter((p) => p.stock > 0)
         this.featuredProducts = this.inventory.filter((p) => p.isFeatured)
       } catch (error) {

@@ -52,6 +52,13 @@
                 {{ product.stock }} available
               </span>
             </div>
+
+            <div v-if="user && user.isAdmin" class="info-row">
+              <label>Active:</label>
+              <span :class="product.isActive ? 'product-active' : 'product-inactive'">
+                {{ product.isActive }}
+              </span>
+            </div>
           </div>
 
           <div v-if="product.description" class="product-description">
@@ -134,11 +141,19 @@ export default {
 
     const fetchProduct = async () => {
       try {
+        let response
         loading.value = true
         error.value = null
-
-        const response = await fetch(`/api/products/${productId.value}`)
-
+        if (authStore.user && authStore.user.isAdmin) {
+          response = await fetch(`/api/products/admin/${productId.value}`, {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+              'Content-Type': 'application/json',
+            },
+          })
+        } else {
+          response = await fetch(`/api/products/${productId.value}`)
+        }
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Product not found')
@@ -225,6 +240,7 @@ export default {
       incrementQuantity,
       decrementQuantity,
       store,
+      user,
       handleAddToCart,
       errorMessage,
       successMessage,
@@ -353,6 +369,14 @@ export default {
 
 .product-stock.low-stock {
   color: #e74c3c;
+}
+.product-active {
+  color: #27ae60;
+  font-weight: 600;
+}
+.product-inactive {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 .product-description {

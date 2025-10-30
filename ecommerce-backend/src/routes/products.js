@@ -20,6 +20,27 @@ router.get('/admin', async (req, res) => {
     res.status(500).json({ error: 'Internal server error while fetching products' });
   }
 });
+router.get('/admin/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await prisma.product.findUnique({
+      where: {
+        id: id,
+      },
+    });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    const formattedProduct = {
+      ...product,
+      price: product.price.toString(),
+    };
+    res.json(formattedProduct);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({ error: 'Failed to fetch product' });
+  }
+});
 
 router.post('/admin', async (req, res) => {
   try {

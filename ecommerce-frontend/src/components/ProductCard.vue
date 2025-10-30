@@ -35,6 +35,7 @@
           <div class="cell">
             <label>Stock:</label>
           </div>
+
           <div class="cell">
             <span
               :class="{
@@ -47,6 +48,17 @@
             </span>
           </div>
         </div>
+        <div v-if="authStore.user && authStore.user.isAdmin" class="row">
+          <div class="cell">
+            <label>Active:</label>
+          </div>
+          <div class="cell">
+            <span :class="product.isActive ? 'active-true' : 'active-false'">{{
+              product.isActive
+            }}</span>
+          </div>
+        </div>
+
         <div class="row">
           <div class="cell">
             <label>Quantity:</label>
@@ -257,6 +269,14 @@ export default {
 
 .view-details-btn:hover {
   background: #7f8c8d;
+}
+.active-true {
+  color: #27ae60;
+  font-weight: bold;
+}
+.active-false {
+  color: #e74c3c;
+  font-weight: bold;
 }
 
 .low-stock {

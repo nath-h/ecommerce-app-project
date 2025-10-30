@@ -88,8 +88,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in order.orderItems" :key="`{order.id}-${item.id}`">
-              <td><i :class="`icofont-${item.product.icon} icofont-4x`"></i></td>
+            <tr v-for="item in order.orderItems" :key="`${order.id}-${item.id}`">
+              <td>
+                <i
+                  :class="getIconClass(item.product.icon)"
+                  :ref="(el) => setIconRef(el, `${order.id}-${item.id}`)"
+                ></i>
+              </td>
               <td>{{ item.product.name }}</td>
               <td>${{ formatPrice(item.price) }}</td>
               <td>{{ item.quantity }}</td>
@@ -141,6 +146,29 @@ export default {
     const loadingMore = ref(false)
     const error = ref(null)
     const cancellingOrders = ref([])
+    const iconElements = ref({})
+    const getIconClass = (icon) => {
+      return `icofont-4x icofont-${icon}`
+    }
+    const setIconRef = (el, key) => {
+      if (el) {
+        iconElements.value[key] = el
+      }
+    }
+    const validateIcons = () => {
+      {
+        Object.values(iconElements.value).forEach((iconElement) => {
+          if (iconElement) {
+            const computed = window.getComputedStyle(iconElement, '::before')
+            const content = computed.getPropertyValue('content')
+
+            if (content === 'none' || content === '""' || !content) {
+              iconElement.className = 'icofont-4x icofont-spoon-and-fork'
+            }
+          }
+        })
+      }
+    }
     const pagination = ref({
       page: 1,
       limit: 10,
@@ -269,9 +297,10 @@ export default {
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       if (authStore.user) {
-        fetchOrders()
+        await fetchOrders()
+        validateIcons()
       } else {
         error.value = 'Please log in to view your orders'
         loading.value = false
@@ -289,6 +318,9 @@ export default {
       totalOrders,
       fetchOrders,
       loadMore,
+      iconElements,
+      getIconClass,
+      setIconRef,
       formatDate,
       formatStatus,
       formatPrice,
@@ -525,8 +557,6 @@ export default {
 
 .sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
   padding: 0;
   margin: -1px;
   overflow: hidden;

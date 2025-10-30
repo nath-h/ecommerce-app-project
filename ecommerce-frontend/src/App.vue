@@ -1,13 +1,7 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
           Display cart total w/ red slash through original price if discount applied and display coupon code, allow coupon apply from sidebar
-          Homepage: Selectable Featured | Favorites link to toggle between them
-          Breadcrumb links that sort by type of item, favorites
-          Filter by: type, price(low-high, high-low). Should be able to copy some of the functionality in ProductSearch
-          Use pinia inventory state for the above as we don't need to query the db again for information that's already been queried. Maybe we can call 
-          onMounted or iniitializeStore or something when we press one of these links - probably unnecessary though as the data should already be fresh anyway
-          since we don't have users logged in for more than 30 minutes without refreshing or navigating
-          Add pagination to ProductSearch (only show 20 items at a time) *might be done? add >20 and try to search*
+          Add pagination to ProductSearch (only show 20 items at a time)
           The above pagination may break ProductSearch so will need to find a workaround as it may only search the 20 currently displayed products
           Change ProductSearch to save the search query in router link - watch: (search value, route.query) for constant update - lodash debounce to avoid lag
           Order confirmation and email receipt - status updates? (EmailJS or Vercel backend with Nodemailer, sendgrid, or mailgun)
@@ -15,7 +9,8 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          DELETE, DISABLE button next to edit in admin tables
+          VIEW button in admin actions table next to Edit = redirect to product or order page
+          DELETE, DISABLE button when disabled - password input modal warning and check for delete
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)
           
