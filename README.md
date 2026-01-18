@@ -21,7 +21,7 @@ For first time project setup, simply enter:
 
 ```bash
 git clone https://github.com/nath-h/ecommerce-app-project.git
-cd my-ecommerce-app (or if you followed the prompts given by VS Code to open the project, skip this step)
+cd my-ecommerce-app (skip this if you followed the prompts given by VS Code to open the project)
 npm run setup
 ```
 
