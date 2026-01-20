@@ -969,7 +969,7 @@ const fetchAllProductsAsAdmin = async () => {
     const data = await response.json()
 
     if (response.ok) {
-      products.value = data.products
+      products.value = data.products      
     } else {
       throw new Error(data.error || 'Failed to fetch products as admin')
     }

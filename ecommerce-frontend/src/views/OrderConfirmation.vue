@@ -154,7 +154,7 @@
       </div>
 
       <div class="actions-section">
-        <router-link to="/" class="btn btn-secondary"> Continue Shopping </router-link>
+        <router-link to="/" class="btn btn-secondary">Continue Shopping</router-link>
         <router-link v-if="authStore.user" to="/past-orders" class="btn btn-secondary">
           View Order History
         </router-link>
@@ -247,8 +247,8 @@ export default {
         const orderId = route.params.id
         let url = `/api/orders/${orderId}`
 
-        if (authStore.userId) {
-          url += `?userId=${authStore.userId}`
+        if (authStore.user) {
+          url += `?userId=${authStore.user.id}`
         } else if (customerEmail) {
           url += `?customerEmail=${encodeURIComponent(customerEmail)}`
         } else {

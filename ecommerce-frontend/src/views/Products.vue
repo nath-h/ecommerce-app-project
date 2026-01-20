@@ -2,17 +2,9 @@
   <main class="wrapper">
     <h1>All Products</h1>
 
-    <div v-if="authStore.user && authStore.user.isAdmin">
+    <div>
       <ProductSearch
         :products="store.products"
-        :searchCategory="'all'"
-        title="All Products"
-        @search-update="handleSearchActive"
-      />
-    </div>
-    <div v-else>
-      <ProductSearch
-        :products="store.inventory"
         :searchCategory="'all'"
         title="All Products"
         @search-update="handleSearchActive"

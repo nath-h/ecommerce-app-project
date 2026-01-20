@@ -4,7 +4,6 @@ import { useAuthStore } from '@/stores/authStore'
 export const useEcommerceStore = defineStore('ecommerce', {
   state: () => ({
     products: [],
-    inventory: [],
     featuredProducts: [],
     cart: [],
     loading: false,
@@ -18,7 +17,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
   getters: {
     enrichedCartItems: (state) => {
       return state.cart.map((cartItem) => {
-        const product = state.inventory.find((p) => p.id === cartItem.productId)
+        const product = state.products.find((p) => p.id === cartItem.productId)
         return {
           productId: cartItem.productId,
           name: product ? product.name : 'Unknown',
@@ -37,7 +36,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     cartSubtotal: (state) => {
       const total = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.id === cartItem.productId)
+        const product = state.products.find((p) => p.id === cartItem.productId)
         const price = product ? parseFloat(product.price) : 0
         return acc + price * cartItem.quantity
       }, 0)
@@ -46,7 +45,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     cartTotal: (state) => {
       const subtotal = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.id === cartItem.productId)
+        const product = state.products.find((p) => p.id === cartItem.productId)
         const price = product ? parseFloat(product.price) : 0
         return acc + price * cartItem.quantity
       }, 0)
@@ -71,7 +70,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       if (!state.activeCoupon) return 0
 
       const subtotal = state.cart.reduce((acc, cartItem) => {
-        const product = state.inventory.find((p) => p.id == cartItem.productId)
+        const product = state.products.find((p) => p.id == cartItem.productId)
         const price = product ? parseFloat(product.price) : 0
         return acc + price * cartItem.quantity
       }, 0)
@@ -97,7 +96,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       try {
         const authStore = useAuthStore()
         let response
-        if (authStore.user && authStore.user.isAdmin) {
+        if (authStore.isAdmin) {
           response = await fetch('/api/products/admin', {
             headers: {
               Authorization: `Bearer ${authStore.token}`,
@@ -109,17 +108,16 @@ export const useEcommerceStore = defineStore('ecommerce', {
             throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
           }
           const data = await response.json()
-          this.products = Array.isArray(data.products) ? data.products : []
+          this.products = data.products
         } else {
           response = await fetch('/api/products')
           if (!response.ok) {
             throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
           }
           const data = await response.json()
-          this.products = Array.isArray(data) ? data : []
+          this.products = data.products
         }
-        this.inventory = this.products.filter((p) => p.stock > 0)
-        this.featuredProducts = this.inventory.filter((p) => p.isFeatured)
+        this.featuredProducts = this.products.filter((p) => p.isFeatured)
       } catch (error) {
         this.error = error.message
       } finally {
@@ -136,20 +134,12 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
         for (let i = this.cart.length - 1; i >= 0; i--) {
           const cartItem = this.cart[i]
-          const product = this.inventory.find((p) => p.id === cartItem.productId)
+          const product = this.products.find((p) => p.id === cartItem.productId)
 
           if (!product) {
             this.cart.splice(i, 1)
             this.stockValidationErrors.push(
-              `${cartItem.name || 'Unknown product'} is no longer available and was removed from your cart.`,
-            )
-            hasChanges = true
-            continue
-          }
-          if (!product.isActive) {
-            this.cart.splice(i, 1)
-            this.stockValidationErrors.push(
-              `${product.name} is no longer available and was removed from your cart.`,
+              'A product in your cart was no longer available and was removed.',
             )
             hasChanges = true
             continue
@@ -157,7 +147,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
           if (product.stock < cartItem.quantity) {
             const oldQuantity = cartItem.quantity
-            cartItem.quantity = Math.max(0, product.stock)
+            cartItem.quantity = product.stock
 
             if (cartItem.quantity === 0) {
               this.cart.splice(i, 1)
@@ -215,7 +205,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     addToCart(productId, quantity) {
       this.error = null
-      const product = this.inventory.find((p) => p.id === productId)
+      const product = this.products.find((p) => p.id === productId)
       if (!product) {
         this.error = `Product not found: ${productId}`
         return false
@@ -243,7 +233,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
       return true
     },
 
-    async toggleFavorite(id, productId) {
+    async toggleFavorite(productId) {
       try {
         const authStore = useAuthStore()
         const response = await fetch(`/api/users/favorite/${productId}`, {
@@ -300,7 +290,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
     },
 
     getAvailableStock(productId) {
-      const product = this.inventory.find((p) => p.id === productId)
+      const product = this.products.find((p) => p.id === productId)
       if (!product) return 0
 
       const cartItem = this.cart.find((item) => item.productId === productId)
@@ -370,7 +360,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: authStore.userId || null,
+            userId: authStore.user.id || null,
             customerInfo: orderData.customer,
             cartItems: this.enrichedCartItems,
             couponCode: this.activeCoupon
@@ -413,7 +403,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
       try {
         const response = await fetch(
-          `/api/orders?userId=${authStore.userId}&page=${page}&limit=${limit}`,
+          `/api/orders?userId=${authStore.user.id}&page=${page}&limit=${limit}`,
         )
 
         if (!response.ok) {
@@ -437,7 +427,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: authStore.userId,
+            userId: authStore.user ? authStore.user.id : null,
           }),
         })
 
@@ -455,7 +445,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
     createOrderData({ customer, cartItems }) {
       const authStore = useAuthStore()
-      if (authStore.user && authStore.updateUserPreferences) {
+      if (authStore.user) {
         authStore.updateUserPreferences({
           name: customer.name || '',
           email: customer.email || '',

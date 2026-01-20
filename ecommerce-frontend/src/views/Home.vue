@@ -70,17 +70,9 @@
           </div>
         </section>
         <section v-if="activeTab === 'all'" class="tab-content">
-          <div v-if="authStore.user && authStore.user.isAdmin">
+          <div>
             <ProductSearch
               :products="store.products"
-              :searchCategory="activeTab"
-              title="All Products"
-              @search-update="handleSearchUpdate"
-            />
-          </div>
-          <div v-else>
-            <ProductSearch
-              :products="store.inventory"
               :searchCategory="activeTab"
               title="All Products"
               @search-update="handleSearchUpdate"

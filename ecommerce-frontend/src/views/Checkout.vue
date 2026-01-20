@@ -117,9 +117,7 @@
       </div>
 
       <div class="checkout-section">
-        <h2>
-          {{ authStore.user ? 'Customer Information' : 'Your information' }}
-        </h2>
+        <h2>Customer Information</h2>
         <form @submit.prevent="submitOrder" class="checkout-form">
           <div class="form-group">
             <label for="name">Full Name *</label>
@@ -129,7 +127,7 @@
               v-model="customerInfo.name"
               required
               class="form-input"
-              :placeholder="authStore.user ? '' : 'Enter your full name'"
+              placeholder="Enter your full name"
             />
           </div>
 
@@ -141,7 +139,7 @@
               v-model="customerInfo.email"
               required
               class="form-input"
-              :placeholder="authStore.user ? '' : 'Enter your email address'"
+              placeholder="Enter your email address"
             />
           </div>
 
@@ -152,7 +150,7 @@
               id="phone"
               v-model="customerInfo.phone"
               class="form-input"
-              :placeholder="authStore.user ? '' : 'Enter your phone number'"
+              placeholder="Enter your phone number"
               @input="formatPhoneInput"
               minlength="14"
             />
@@ -166,7 +164,7 @@
               required
               class="form-input"
               rows="3"
-              :placeholder="authStore.user ? '' : 'Enter your delivery address'"
+              placeholder="Enter your delivery address"
             ></textarea>
           </div>
 
@@ -255,7 +253,7 @@ export default {
 
     onMounted(async () => {
       validateIcons()
-      if (authStore.user && userPreferences.value) {
+      if (userPreferences.value) {
         customerInfo.value = {
           name: userPreferences.value.name || '',
           email: userPreferences.value.email || '',
@@ -284,17 +282,17 @@ export default {
     })
 
     const formatPhoneInput = (event) => {
-      let value = event.target.value.replace(/[^0-9]/g, '')
+      let value = event.target.value.replace(/\D/g, '').substring(0, 10)
+      let formatted = value
 
-      value = value.substring(0, 10)
-
-      if (value.length >= 6) {
-        value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`
-      } else if (value.length >= 3) {
-        value = `(${value.slice(0, 3)}) ${value.slice(3)}`
+      if (value.length > 6) {
+        formatted = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`
+      } else if (value.length > 3) {
+        formatted = `(${value.slice(0, 3)}) ${value.slice(3)}`
+      } else if (value.length > 0) {
+        formatted = value
       }
-
-      customerInfo.value.phone = value
+      customerInfo.value.phone = formatted
     }
 
     const applyCoupon = () => {
