@@ -7,7 +7,6 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: null,
-    isAuthenticated: false,
     tokenExpirationTimer: null,
     warningTimer: null,
     loginTime: null,
@@ -20,9 +19,7 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isLoggedIn: (state) => !!(state.isAuthenticated && state.token),
-    currentUser: (state) => state.user,
-    userId: (state) => state.user?.id || null,
+    isLoggedIn: (state) => !!(state.user && state.token),
     userFullName: (state) => {
       if (state.user) {
         return `${state.user.firstName} ${state.user.lastName}`.trim()
@@ -45,7 +42,7 @@ export const useAuthStore = defineStore('auth', {
     initializeAuth() {
       this.loadAuthFromStorage()
       this.loadUserPreferencesFromStorage()
-      if (this.isAuthenticated) {
+      if (this.isLoggedIn) {
         this.setupTokenExpiration()
       }
     },
@@ -54,7 +51,6 @@ export const useAuthStore = defineStore('auth', {
       this.user = userData
       this.token = token
       this.loginTime = Date.now()
-      this.isAuthenticated = true
       this.saveAuthToStorage()
       this.setupTokenExpiration()
     },
@@ -71,7 +67,6 @@ export const useAuthStore = defineStore('auth', {
             this.token = token
             this.user = JSON.parse(userData)
             this.loginTime = parseInt(loginTime)
-            this.isAuthenticated = true
           } else {
             this.clearAuthFromStorage()
           }
@@ -133,7 +128,6 @@ export const useAuthStore = defineStore('auth', {
     clearAuth() {
       this.user = null
       this.token = null
-      this.isAuthenticated = false
       this.loginTime = null
       this.userPreferences = {
         name: '',
@@ -178,8 +172,7 @@ export const useAuthStore = defineStore('auth', {
       this.clearTimers()
       if (!this.loginTime) return
       const now = Date.now()
-      let timeElapsed = now - this.loginTime
-      if (timeElapsed < 0) timeElapsed = 0
+      const timeElapsed = now - this.loginTime
       const timeUntilWarning = warningMessageTimer - timeElapsed
       const timeUntilExpiration = sessionDuration - timeElapsed
 
@@ -264,26 +257,6 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error fetching user favorites:', error)
       }
-    },
-
-    updateUser(userData) {
-      this.user = { ...this.user, ...userData }
-      this.saveAuthToStorage()
-    },
-
-    validateToken() {
-      if (!this.token || !this.loginTime) {
-        this.clearAuth()
-        return false
-      }
-
-      const timeElapsed = Date.now() - this.loginTime
-
-      if (timeElapsed > sessionDuration) {
-        this.clearAuth()
-        return false
-      }
-      return true
     },
 
     getAuthHeaders() {

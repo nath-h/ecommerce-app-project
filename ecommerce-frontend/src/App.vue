@@ -9,7 +9,7 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          VIEW button in admin actions table next to Edit = redirect to product or order page
+          VIEW button in admin actions table next to Edit - redirect to product or order page
           DELETE, DISABLE button when disabled - password input modal warning and check for delete
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)

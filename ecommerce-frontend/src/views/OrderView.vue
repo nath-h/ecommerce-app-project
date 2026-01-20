@@ -237,8 +237,8 @@ export default {
         const orderId = route.params.id
         let url = `/api/orders/${orderId}`
 
-        if (authStore.userId) {
-          url += `?userId=${authStore.userId}`
+        if (authStore.user) {
+          url += `?userId=${authStore.user.id}`
         } else if (customerEmail) {
           url += `?customerEmail=${encodeURIComponent(customerEmail)}`
         } else {

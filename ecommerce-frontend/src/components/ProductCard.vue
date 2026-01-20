@@ -43,12 +43,17 @@
                 'out-of-stock': product.stock <= 0,
               }"
             >
-              <span v-if="product.stock <= 0">Out of stock</span>
-              <span v-else>{{ product.stock }} available</span>
+              <span v-if="product.stock === 0">{{
+                authStore.isAdmin ? `${product.stock} available` : 'Out of Stock'
+              }}</span>
+              <span v-if="product.stock < 0">{{
+                authStore.isAdmin ? `( ${product.stock} ) available` : 'Out of Stock'
+              }}</span>
+              <span v-else-if="product.stock > 0">{{ product.stock }} available</span>
             </span>
           </div>
         </div>
-        <div v-if="authStore.user && authStore.user.isAdmin" class="row">
+        <div v-if="authStore.isAdmin && product.isActive != null" class="row">
           <div class="cell">
             <label>Active:</label>
           </div>
@@ -153,7 +158,7 @@ export default {
         errorMessage.value = 'You must be logged in to favorite products'
         return
       }
-      const success = await store.toggleFavorite(authStore.user.id, props.product.id)
+      const success = await store.toggleFavorite(props.product.id)
       if (success) {
         await authStore.fetchUserFavorites()
       }

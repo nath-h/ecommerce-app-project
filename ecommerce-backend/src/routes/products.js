@@ -14,6 +14,10 @@ router.get('/admin', async (req, res) => {
         createdAt: 'desc',
       },
     });
+    products.map(product => ({
+      ...product,
+      price: product.price.toString(),
+    }));
     res.json({ products });
   } catch (error) {
     console.error('Error fetching products', error);
@@ -205,12 +209,12 @@ router.get('/', async (req, res) => {
         createdAt: 'desc',
       },
     });
-    const formattedProducts = products.map(product => ({
+    const filteredProducts = products.map(({ isActive, ...product }) => ({
       ...product,
       price: product.price.toString(),
     }));
 
-    res.json(formattedProducts);
+    res.json({ products: filteredProducts });
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ error: 'Failed to fetch products' });

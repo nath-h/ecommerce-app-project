@@ -144,7 +144,7 @@ export default {
         let response
         loading.value = true
         error.value = null
-        if (authStore.user && authStore.user.isAdmin) {
+        if (authStore.isAdmin) {
           response = await fetch(`/api/products/admin/${productId.value}`, {
             headers: {
               Authorization: `Bearer ${authStore.token}`,
@@ -179,7 +179,7 @@ export default {
         errorMessage.value = 'You must be logged in to favorite products'
         return
       }
-      const success = await store.toggleFavorite(authStore.user.id, product.value.id)
+      const success = await store.toggleFavorite(product.value.id)
       if (success) {
         await authStore.fetchUserFavorites()
       }
