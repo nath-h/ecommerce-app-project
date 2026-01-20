@@ -3,7 +3,9 @@
 A full-stack ecommerce portfolio project built using:
 
 **Frontend:** Vue 3 + Pinia + Vite
+
 **Backend:** Express + Prisma + JWT Authentication
+
 **Database:** PostgreSQL
 
 # First Time Setup Guide
@@ -19,7 +21,7 @@ For first time project setup, simply enter:
 
 ```bash
 git clone https://github.com/nath-h/ecommerce-app-project.git
-cd my-ecommerce-app
+cd my-ecommerce-app (skip this if you followed the prompts given by VS Code to open the project)
 npm run setup
 ```
 
