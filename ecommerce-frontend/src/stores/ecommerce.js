@@ -215,14 +215,17 @@ export const useEcommerceStore = defineStore('ecommerce', {
       const currentCartQuantity = existingItem ? existingItem.quantity : 0
       const totalRequestedQuantity = currentCartQuantity + quantity
 
+      if (quantity <= 0) {
+        this.error = 'Quantity must be at least 1.'
+        return false
+      }
       if (totalRequestedQuantity > product.stock) {
-        this.error = `Insufficient stock. Requested total ${totalRequestedQuantity}, Available: ${product.stock} (includes cart quantity)`
+        this.error = `Insufficient stock. Requested total (includes cart quantity): ${totalRequestedQuantity}, Available to add to cart: ${product.stock - currentCartQuantity}`
         return false
       }
 
       if (existingItem) {
         existingItem.quantity += quantity
-        this.error = `Adding ${quantity} to cart. ${product.stock} remaining`
       } else {
         this.cart.push({
           productId: productId,
@@ -230,6 +233,40 @@ export const useEcommerceStore = defineStore('ecommerce', {
         })
       }
       this.saveCartToLocalStorage()
+      return true
+    },
+
+    updateCartItemQuantity(productId, newQuantity) {
+      const qty = parseInt(newQuantity)
+      if (isNaN(qty) || qty < 1) {
+        this.error = 'Invalid quantity'
+        setTimeout(() => {
+          this.error = null
+        }, 3000)
+        return false
+      }
+      const cartItem = this.cart.find((item) => item.productId === productId)
+      const product = this.products.find((p) => p.id === productId)
+
+      if (!cartItem || !product) {
+        this.error = 'Product not found'
+        setTimeout(() => {
+          this.error = null
+        }, 3000)
+        return false
+      }
+
+      if (qty > product.stock) {
+        this.error = `We're sorry, there are only ${product.stock} of this item available in stock`
+        setTimeout(() => {
+          this.error = null
+        }, 3000)
+
+        return false
+      }
+      cartItem.quantity = qty
+      this.saveCartToLocalStorage()
+      this.validateActiveCoupon()
       return true
     },
 
@@ -272,7 +309,7 @@ export const useEcommerceStore = defineStore('ecommerce', {
 
       const subtotal = this.cartSubtotal
       if (subtotal < this.activeCoupon.minOrder) {
-        this.couponError = `Minimum order of $${this.activeCoupon.minOrder.toFixed(2)} required for this coupon`
+        this.couponError = `A minimum order of $${this.activeCoupon.minOrder.toFixed(2)} is required for this coupon.`
         this.activeCoupon = null
       }
     },
@@ -354,6 +391,14 @@ export const useEcommerceStore = defineStore('ecommerce', {
       const authStore = useAuthStore()
 
       try {
+        if (this.activeCoupon) {
+          const isValid = await this.applyCoupon(this.activeCoupon.code)
+          if (!isValid) {
+            throw new Error(
+              this.couponError || 'Coupon is no longer valid or does not meet the requirements',
+            )
+          }
+        }
         const response = await fetch('/api/orders', {
           method: 'POST',
           headers: {

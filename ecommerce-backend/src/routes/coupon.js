@@ -65,7 +65,7 @@ router.get('/:code/validate', async (req, res) => {
 
     if (parseFloat(subtotal) < parseFloat(coupon.minOrder)) {
       return res.status(400).json({
-        error: `Minimum order of $${parseFloat(coupon.minOrder)}.`,
+        error: `A minimum order of $${parseFloat(coupon.minOrder)} is required for this coupon.`,
       });
     }
     res.json(coupon);
@@ -240,10 +240,10 @@ router.put('/admin/:id', async (req, res) => {
         actionType === 'DEACTIVATED_COUPON'
           ? 'Coupon has been deactivated successfully'
           : actionType === 'REACTIVATED_COUPON'
-          ? 'Coupon has been reactivated successfully'
-          : Object.keys(filteredChanges).length <= 0
-          ? 'No fields were changed, therefore no changes were made'
-          : 'Coupon updated successfully',
+            ? 'Coupon has been reactivated successfully'
+            : Object.keys(filteredChanges).length <= 0
+              ? 'No fields were changed, therefore no changes were made'
+              : 'Coupon updated successfully',
       coupon: updatedCoupon,
     });
   } catch (error) {

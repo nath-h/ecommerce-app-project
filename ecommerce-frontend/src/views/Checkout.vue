@@ -44,7 +44,33 @@
                 >{{ item.name }}
               </td>
               <td>${{ item.price }}</td>
-              <td>{{ item.quantity }}</td>
+              <td>
+                <div class="quantity-controls">
+                  <button
+                    @click="decrementQuantity(item.productId)"
+                    :disabled="item.quantity <= 1"
+                    class="qty-btn"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    :value="item.quantity"
+                    @change="updateQuantity(item.productId, $event.target.value)"
+                    @blur="$event.target.value = item.quantity"
+                    min="1"
+                    :max="item.product.stock"
+                    class="qty-input"
+                  />
+                  <button
+                    @click="incrementQuantity(item.productId)"
+                    :disabled="item.quantity >= item.product.stock"
+                    class="qty-btn"
+                  >
+                    +
+                  </button>
+                </div>
+              </td>
               <td>{{ $formatCurrency(item.total) }}</td>
             </tr>
           </tbody>
@@ -84,6 +110,7 @@
             </tr>
           </tfoot>
         </table>
+        <p v-if="ecommerceStore.error" class="error-message">{{ ecommerceStore.error }}</p>
 
         <div class="coupon-section">
           <h3>Have a coupon code?</h3>
@@ -251,8 +278,27 @@ export default {
       }
     }
 
+    const updateQuantity = (productId, newQuantity) => {
+      ecommerceStore.updateCartItemQuantity(productId, newQuantity)
+    }
+
+    const incrementQuantity = (productId) => {
+      const cartItem = ecommerceStore.cart.find((item) => item.productId === productId)
+      if (cartItem) {
+        ecommerceStore.updateCartItemQuantity(productId, cartItem.quantity + 1)
+      }
+    }
+
+    const decrementQuantity = (productId) => {
+      const cartItem = ecommerceStore.cart.find((item) => item.productId === productId)
+      if (cartItem && cartItem.quantity > 1) {
+        ecommerceStore.updateCartItemQuantity(productId, cartItem.quantity - 1)
+      }
+    }
+
     onMounted(async () => {
       validateIcons()
+      ecommerceStore.validateActiveCoupon()
       if (userPreferences.value) {
         customerInfo.value = {
           name: userPreferences.value.name || '',
@@ -355,6 +401,9 @@ export default {
       cart,
       cartTotal,
       cartSubtotal,
+      updateQuantity,
+      incrementQuantity,
+      decrementQuantity,
       enrichedCartItems,
       activeCoupon,
       couponDiscount,
@@ -454,6 +503,36 @@ export default {
 
 .btn-remove-coupon:hover {
   color: #c82333;
+}
+
+.quantity-controls {
+  gap: 5px;
+}
+
+.qty-btn {
+  width: 25px;
+  height: 25px;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 3px;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qty-input {
+  width: 40px;
+  text-align: center;
+  border-radius: 3px;
+  padding: 3px;
 }
 
 .coupon-description {

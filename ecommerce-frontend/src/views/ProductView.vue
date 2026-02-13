@@ -70,14 +70,14 @@
             <div class="quantity-selector">
               <label for="quantity">Quantity:</label>
               <div class="quantity-controls">
-                <button @click="decrementQuantity" :disabled="quantity <= 0" class="quantity-btn">
+                <button @click="decrementQuantity" :disabled="quantity <= 1" class="quantity-btn">
                   -
                 </button>
                 <input
                   id="quantity"
                   type="number"
                   v-model.number="quantity"
-                  min="0"
+                  min="1"
                   :max="product.stock"
                   class="quantity-input"
                 />
@@ -97,11 +97,7 @@
               {{ successMessage }}
             </div>
 
-            <button
-              @click="handleAddToCart"
-              class="add-to-cart-btn"
-              :disabled="quantity <= 0 || quantity > product.stock || product.stock <= 0"
-            >
+            <button @click="handleAddToCart" class="add-to-cart-btn">
               <span v-if="product.stock <= 0">Out of stock</span>
               <span v-else>Add to cart</span>
             </button>
@@ -192,7 +188,7 @@ export default {
     }
 
     const decrementQuantity = () => {
-      if (quantity.value > 0) {
+      if (quantity.value > 1) {
         quantity.value--
       }
     }
@@ -201,20 +197,28 @@ export default {
       errorMessage.value = ''
       successMessage.value = ''
 
-      const existingCartItem = store.enrichedCartItems.find((item) => item.id === product.value.id)
+      const existingCartItem = store.enrichedCartItems.find((item) => item.id === product.id)
       const currentCartQuantity = existingCartItem ? existingCartItem.quantity : 0
       const remainingStock = product.value.stock - currentCartQuantity
 
-      if (remainingStock === 0) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). This item is out of stock. (${currentCartQuantity} already in cart.)`
-        quantity.value = 0
-        return
-      } else if (quantity.value > remainingStock) {
-        errorMessage.value = `Cannot add ${quantity.value} item(s). Only ${remainingStock} more in stock. (${currentCartQuantity} already in cart)`
-        quantity.value = 0
-        return
-      }
+      // if (remainingStock <= 0) {
+      //   quantity.value = remainingStock - currentCartQuantity
+      //   console.log(remainingStock - currentCartQuantity)
+      //   console.log(`${currentCartQuantity}`)
+      //   console.log(`${remainingStock}`)
+      // } else if (quantity.value > remainingStock) {
+      //   console.log(remainingStock - currentCartQuantity)
+
+      //   console.log(`${currentCartQuantity}`)
+      //   console.log(`${remainingStock}`)
+      //   quantity.value = remainingStock - currentCartQuantity
+      // }
       const success = store.addToCart(product.value.id, quantity.value)
+      if (remainingStock <= 0) {
+        quantity.value = 0
+      } else if (quantity.value > remainingStock) {
+        quantity.value = remainingStock - currentCartQuantity
+      }
       if (success) {
         const addedQuantity = quantity.value
         quantity.value = 1

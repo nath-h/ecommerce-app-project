@@ -1,6 +1,6 @@
 <!-- TODO:              
               USER FUNCTIONALITY:
-          Display cart total w/ red slash through original price if discount applied and display coupon code, allow coupon apply from sidebar
+          Dispatch a notification to users for a product on their watch list (in their favorites) that goes on sale
           Add pagination to ProductSearch (only show 20 items at a time)
           The above pagination may break ProductSearch so will need to find a workaround as it may only search the 20 currently displayed products
           Change ProductSearch to save the search query in router link - watch: (search value, route.query) for constant update - lodash debounce to avoid lag
@@ -9,14 +9,13 @@
           Fake payment integration (stripe test mode?)
           
           ADMIN FUNCTIONALITY:
-          VIEW button in admin actions table next to Edit - redirect to product or order page
-          DELETE, DISABLE button when disabled - password input modal warning and check for delete
+          VIEW button in admin actions table next to Edit - redirect to order page (product done)
+          DELETE, DISABLE button - when disabled checkbox input modal warning and password for delete
           Order status tracking/updates (may not be worth it)
           Basic analytics such as sales, popular products (cron job)
           
           DATABASE FUNCTIONALITY: 
           Add and test pagination for every relevant page (we'll want a multiple of 3 for products since they display in rows of 3)
-          Add discount per item (search by item name, find by name, apply to id)  
           Add scheduled backup using pg_dump and pg_restore (cron job on server)
 
           Visuals/frontend/css:

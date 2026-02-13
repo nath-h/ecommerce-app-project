@@ -61,7 +61,7 @@ After setup and running the above commands, you can access:
 
 ```bash
 # Start Prisma Studio (Database Management/Visualization Tool)
-npm run db:studio
+npm run studio
 ```
 
 Studio should open automatically, otherwise navigate to http://localhost:5555
